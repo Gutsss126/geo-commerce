@@ -45,6 +45,17 @@ final class GEO_Commerce_Connector {
             'geo-commerce',
             [$this, 'settings_page']
         );
+        // WooCommerce 菜单下也显示，方便查找
+        if (class_exists('WooCommerce')) {
+            add_submenu_page(
+                'woocommerce',
+                'GEO Commerce 同步',
+                'GEO Commerce',
+                'manage_options',
+                'geo-commerce',
+                [$this, 'settings_page']
+            );
+        }
     }
 
     public function register_settings(): void {

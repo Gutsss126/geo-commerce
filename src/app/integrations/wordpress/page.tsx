@@ -11,6 +11,9 @@ export default async function WordPressIntegrationPage() {
 
   const allSites = await prisma.site.findMany({ orderBy: { name: "asc" } });
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const productionUrl = "https://geo-commerce-o2lp.vercel.app";
+  const displayUrl = appUrl.includes("localhost") ? productionUrl : appUrl;
+  const needsRedeploy = appUrl.includes("localhost");
 
   return (
     <div className="space-y-8">
@@ -59,20 +62,29 @@ export default async function WordPressIntegrationPage() {
       </Card>
 
       <Card>
-        <CardTitle>② 插件配置项</CardTitle>
+        <CardTitle>② 复制到 WordPress 插件的配置</CardTitle>
+        <CardDescription>
+          以下填在 <strong>fancrafti.com → WordPress 后台</strong>，不是本页面输入。
+        </CardDescription>
+        {needsRedeploy && (
+          <p className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+            检测到仍显示 localhost，请在 Vercel Redeploy。下方已给出线上地址，插件请先用{" "}
+            <strong>{productionUrl}</strong>。
+          </p>
+        )}
         <dl className="mt-4 space-y-3 text-sm">
           <ConfigRow
-            label="GEO API 地址"
-            value={`${appUrl}`}
-            hint="插件会向该地址 POST 同步数据"
+            label="GEO API 地址（填到 WordPress）"
+            value={displayUrl}
+            hint="WordPress：设置 → GEO Commerce，或 WooCommerce → GEO Commerce"
           />
           <ConfigRow
             label="产品同步端点"
-            value={`${appUrl}/api/integrations/wordpress/products`}
+            value={`${displayUrl}/api/integrations/wordpress/products`}
           />
           <ConfigRow
             label="订单同步端点"
-            value={`${appUrl}/api/integrations/wordpress/orders`}
+            value={`${displayUrl}/api/integrations/wordpress/orders`}
           />
           <ConfigRow label="请求头" value="X-GEO-API-Key: <你的站点密钥>" />
         </dl>
