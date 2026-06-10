@@ -13,17 +13,19 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('GEO_COMMERCE_VERSION', '0.1.0');
+define('GEO_COMMERCE_VERSION', '0.1.1');
 define('GEO_COMMERCE_OPTION', 'geo_commerce_settings');
 
 final class GEO_Commerce_Connector {
     public function __construct() {
         add_action('admin_menu', [$this, 'admin_menu']);
         add_action('admin_init', [$this, 'register_settings']);
+        add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'plugin_action_links']);
         add_action('save_post_product', [$this, 'sync_product'], 20, 1);
         add_action('woocommerce_update_product', [$this, 'sync_product'], 20, 1);
         add_action('woocommerce_order_status_changed', [$this, 'sync_order'], 20, 1);
         add_action('woocommerce_new_order', [$this, 'sync_order'], 20, 1);
+        add_action('admin_post_geo_commerce_bulk_sync', [$this, 'handle_bulk_sync']);
     }
 
     public static function settings(): array {
@@ -58,6 +60,13 @@ final class GEO_Commerce_Connector {
         }
     }
 
+    /** 在「已安装的插件」列表显示「设置」链接 */
+    public function plugin_action_links(array $links): array {
+        $url = admin_url('options-general.php?page=geo-commerce');
+        array_unshift($links, '<a href="' . esc_url($url) . '">' . esc_html__('Settings', 'geo-commerce-connector') . '</a>');
+        return $links;
+    }
+
     public function register_settings(): void {
         register_setting(GEO_COMMERCE_OPTION, GEO_COMMERCE_OPTION, [
             'sanitize_callback' => function ($input) {
@@ -72,9 +81,15 @@ final class GEO_Commerce_Connector {
 
     public function settings_page(): void {
         $s = self::settings();
+        $synced = isset($_GET['geo_synced']) ? (int) $_GET['geo_synced'] : 0;
         ?>
         <div class="wrap">
             <h1>GEO Commerce 同步设置</h1>
+            <?php if ($synced > 0) : ?>
+                <div class="notice notice-success is-dismissible"><p>
+                    已向 GEO 后台同步 <?php echo (int) $synced; ?> 个产品。
+                </p></div>
+            <?php endif; ?>
             <p>连接你的 GEO Commerce 管理后台（本地或云端）。在后台 <strong>WordPress 集成</strong> 页面复制 API 地址与密钥。</p>
             <form method="post" action="options.php">
                 <?php settings_fields(GEO_COMMERCE_OPTION); ?>
@@ -108,6 +123,16 @@ final class GEO_Commerce_Connector {
                     </tr>
                 </table>
                 <?php submit_button(); ?>
+            </form>
+
+            <hr style="margin: 2rem 0;" />
+            <h2>批量同步</h2>
+            <p>插件启用前已有的产品不会自动出现，可一键同步全部产品到 GEO 后台。</p>
+            <p class="description">之后在新品上架或编辑产品并<strong>更新</strong>时，会自动同步，无需重复操作。</p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('geo_commerce_bulk_sync'); ?>
+                <input type="hidden" name="action" value="geo_commerce_bulk_sync" />
+                <?php submit_button('立即同步全部产品', 'secondary', 'bulk_sync', false); ?>
             </form>
         </div>
         <?php
@@ -153,6 +178,34 @@ final class GEO_Commerce_Connector {
             'category'    => $category_path,
             'url'         => get_permalink($product_id),
         ]);
+    }
+
+    /** 一键同步 WooCommerce 全部产品 */
+    public function handle_bulk_sync(): void {
+        if (!current_user_can('manage_options')) {
+            wp_die('Forbidden');
+        }
+        check_admin_referer('geo_commerce_bulk_sync');
+
+        $ids = get_posts([
+            'post_type'      => 'product',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+        ]);
+
+        $count = 0;
+        foreach ($ids as $id) {
+            $this->sync_product((int) $id);
+            $count++;
+        }
+
+        $redirect = add_query_arg(
+            ['page' => 'geo-commerce', 'geo_synced' => $count],
+            admin_url('options-general.php')
+        );
+        wp_safe_redirect($redirect);
+        exit;
     }
 
     public function sync_order($order_id): void {
