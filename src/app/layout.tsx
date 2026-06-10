@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: "电商独立站生成式引擎优化（GEO）工具与管理后台",
 };
 
+// 管理后台需运行时连数据库，避免 Vercel 构建阶段静态生成失败
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
