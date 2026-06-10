@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Site {
+  id          String   @id @default(cuid())
+  name        String
+  domain      String   @unique
+  platform    String   @default("wordpress")
+  locale      String   @default("en-US")
+  brandVoice  String?
+  wpUrl       String?
+  apiKey      String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products    Product[]
+  orders      Order[]
+  audits      GeoAudit[]
+  citations   Citation[]
+  llmsConfig  LlmsConfig?
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  externalId  String?
+  title       String
+  slug        String
+  description String?
+  price       Float?
+  currency    String   @default("USD")
+  category    String?
+  url         String?
+  sku         String?
+  geoScore    Int?
+  lastAuditAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems  OrderItem[]
+
+  @@unique([siteId, slug])
+  @@unique([siteId, sku])
+}
+
+model GeoAudit {
+  id           String   @id @default(cuid())
+  siteId       String
+  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  type         String
+  targetUrl    String?
+  overallScore Int
+  report       String
+  createdAt    DateTime @default(now())
+}
+
+model Citation {
+  id         String   @id @default(cuid())
+  siteId     String
+  site       Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  engine     String
+  query      String
+  snippet    String?
+  citedUrl   String?
+  detectedAt DateTime @default(now())
+}
+
+model Order {
+  id               String   @id @default(cuid())
+  siteId           String
+  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  orderNumber      String
+  userId           String
+  status           String   @default("pending")
+  contactName      String
+  contactPhone     String
+  contactEmail     String?
+  shippingCountry  String   @default("CN")
+  shippingProvince String?
+  shippingCity     String?
+  shippingAddress  String
+  shippingPostalCode String?
+  currency         String   @default("USD")
+  totalAmount      Float    @default(0)
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  items            OrderItem[]
+
+  @@unique([siteId, orderNumber])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  sku        String
+  title      String
+  quantity   Int
+  unitPrice  Float    @default(0)
+  lineTotal  Float    @default(0)
+}
+
+model LlmsConfig {
+  id        String   @id @default(cuid())
+  siteId    String   @unique
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  content   String
+  updatedAt DateTime @updatedAt
+}
