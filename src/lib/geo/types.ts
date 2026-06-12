@@ -8,9 +8,31 @@ export type GeoCheckResult = {
   recommendation: string;
 };
 
+export type GeoAuditSection = {
+  id: "site-understanding" | "commerce-readability" | "ai-recommendation-readiness" | "measurement-loop";
+  title: string;
+  score: number;
+  maxScore: number;
+  summary: string;
+  checkIds: string[];
+};
+
+export type GeoActionItem = {
+  id: string;
+  priority: "high" | "medium" | "low";
+  title: string;
+  target: string;
+  why: string;
+  fix: string;
+  validation: string;
+};
+
 export type GeoAuditReport = {
+  version?: "2.0";
   overallScore: number;
   checks: GeoCheckResult[];
+  sections?: GeoAuditSection[];
+  actionItems?: GeoActionItem[];
   summary: string;
   generatedAt: string;
 };

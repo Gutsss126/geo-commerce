@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 const nav = [
   { href: "/", label: "总览", icon: LayoutDashboard },
   { href: "/sites", label: "站点管理", icon: Globe },
+  { href: "/geo-audit", label: "GEO Audit 2.0", icon: Sparkles },
   { href: "/integrations/wordpress", label: "WordPress", icon: Plug },
   { href: "/products", label: "产品 GEO", icon: Package },
   { href: "/orders", label: "订单管理", icon: ShoppingCart },
