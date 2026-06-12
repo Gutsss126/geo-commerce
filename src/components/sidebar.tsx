@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  BarChart3,
   Globe,
+  LayoutDashboard,
   Package,
-  ScanSearch,
-  Wrench,
-  Quote,
-  ShoppingCart,
   Plug,
+  Quote,
+  ScanSearch,
+  ShoppingCart,
   Sparkles,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const nav = [
   { href: "/products", label: "产品 GEO", icon: Package },
   { href: "/orders", label: "订单管理", icon: ShoppingCart },
   { href: "/audits", label: "审计报告", icon: ScanSearch },
+  { href: "/diagnostics/ga4", label: "GA4 诊断", icon: BarChart3 },
   { href: "/tools", label: "GEO 工具", icon: Wrench },
   { href: "/citations", label: "AI 引用追踪", icon: Quote },
 ];
@@ -40,10 +42,7 @@ export function Sidebar() {
       </div>
       <nav className="app-nav flex flex-1 flex-col gap-1">
         {nav.map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link
@@ -63,7 +62,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <p className="px-2 text-xs text-slate-600">v0.1 · 本地演示版</p>
+      <p className="px-2 text-xs text-slate-600">v0.1 本地演示版</p>
     </aside>
   );
 }

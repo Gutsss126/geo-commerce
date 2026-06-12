@@ -13,6 +13,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:fancrafti": "tsx scripts/seed-fancrafti.ts",
     "docs:word": "node scripts/generate-word-docs.mjs",
+    "test:ga4": "tsx scripts/test-ga4-diagnostics.ts",
     "cli": "tsx packages/cli/src/index.ts"
   },
   "dependencies": {

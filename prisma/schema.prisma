@@ -119,3 +119,15 @@ model LlmsConfig {
   content   String
   updatedAt DateTime @updatedAt
 }
+
+model Ga4OAuthCredential {
+  id           String   @id @default("default")
+  provider     String   @default("google")
+  refreshToken String
+  accessToken  String?
+  expiresAt    DateTime?
+  scope        String?
+  tokenType    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
