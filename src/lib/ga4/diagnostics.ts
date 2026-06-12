@@ -5,6 +5,10 @@ export type Ga4TrafficMetrics = {
   engagementRate: number;
 };
 
+export type Ga4RealtimeMetrics = {
+  activeUsers: number;
+};
+
 export type Ga4DiagnosticCheck = {
   id: string;
   label: string;
@@ -19,6 +23,7 @@ export type Ga4DiagnosticsInput = {
   landingPath: string;
   dataApiConfigured: boolean;
   metrics?: Ga4TrafficMetrics | null;
+  realtime?: Ga4RealtimeMetrics | null;
   dataApiError?: string | null;
 };
 
@@ -36,6 +41,7 @@ export type Ga4Diagnostics = {
     url: string;
   };
   traffic: (Ga4TrafficMetrics & { engagementRateLabel: string }) | null;
+  realtime: Ga4RealtimeMetrics | null;
   checks: Ga4DiagnosticCheck[];
   generatedAt: string;
 };
@@ -64,7 +70,9 @@ export function buildGa4Diagnostics(input: Ga4DiagnosticsInput): Ga4Diagnostics 
     message: measurementId
       ? `${measurementId} ${measurementValid ? "格式正确" : "格式不正确"}`
       : "尚未配置 GA4 Measurement ID",
-    recommendation: "fancrafti.com 当前应使用 G-OSEFCZ24XS，并确认 /tiktok/ 页面已加载同一个 ID。",
+    recommendation: measurementId
+      ? `${domain} 当前应使用 ${measurementId}，并确认 ${landingPath} 页面已加载同一个 ID。`
+      : `请配置 ${domain} 的 GA4 Measurement ID，并确认 ${landingPath} 页面已加载同一个 ID。`,
   });
 
   checks.push({
@@ -104,6 +112,16 @@ export function buildGa4Diagnostics(input: Ga4DiagnosticsInput): Ga4Diagnostics 
     });
   }
 
+  if (input.realtime) {
+    checks.push({
+      id: "realtime",
+      label: "GA4 Realtime",
+      status: input.realtime.activeUsers > 0 ? "pass" : "warn",
+      message: `最近 30 分钟 ${input.realtime.activeUsers} active users`,
+      recommendation: "实时数据用于快速确认新 GA4 tag 是否已经开始上报；若为 0，请用无痕窗口或手机流量打开落地页后再刷新。",
+    });
+  }
+
   const status = !measurementId
     ? "missing_measurement_id"
     : !measurementValid
@@ -128,6 +146,7 @@ export function buildGa4Diagnostics(input: Ga4DiagnosticsInput): Ga4Diagnostics 
           engagementRateLabel: `${(input.metrics.engagementRate * 100).toFixed(1)}%`,
         }
       : null,
+    realtime: input.realtime ?? null,
     checks,
     generatedAt: new Date().toISOString(),
   };

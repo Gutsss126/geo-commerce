@@ -133,6 +133,27 @@ export default async function Ga4DiagnosticsPage({
         </Card>
       </div>
 
+      <Card>
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-emerald-300" />
+          <CardTitle>GA4 实时反馈</CardTitle>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-slate-500">Active users last 30 min</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {diagnostics.realtime?.activeUsers ?? "—"}
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <p className="text-xs text-slate-500">Check method</p>
+            <p className="mt-1 text-sm text-slate-300">
+              打开 https://fancrafti.com/tiktok/ 后等待 1-3 分钟，再刷新本页。
+            </p>
+          </div>
+        </div>
+      </Card>
+
       {diagnostics.traffic && (
         <Card>
           <div className="flex items-center gap-2">
@@ -186,7 +207,7 @@ export default async function Ga4DiagnosticsPage({
 GOOGLE_OAUTH_CLIENT_SECRET=你的 Web OAuth Client Secret
 GOOGLE_OAUTH_REDIRECT_URI=${oauthConfig.redirectUri}
 GA4_PROPERTY_ID=541416618
-GA4_MEASUREMENT_ID=G-OSEFCZ24XS`}
+GA4_MEASUREMENT_ID=${diagnostics.measurementId ?? "G-XZ96E6XHMY"}`}
         </pre>
       </Card>
     </div>

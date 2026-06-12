@@ -2,6 +2,7 @@ import { buildGa4Diagnostics } from "./diagnostics";
 import {
   fetchGa4LandingPageMetrics,
   fetchGa4LandingPageMetricsWithAccessToken,
+  fetchGa4RealtimeMetricsWithAccessToken,
   getGa4DataApiConfigFromEnv,
   isGa4DataApiConfigured,
 } from "./data-api";
@@ -13,7 +14,7 @@ import {
 } from "./oauth";
 
 const defaultDomain = "fancrafti.com";
-const defaultMeasurementId = "G-OSEFCZ24XS";
+const defaultMeasurementId = "G-XZ96E6XHMY";
 const defaultLandingPath = "/tiktok/";
 
 export type GetGa4DiagnosticsOptions = {
@@ -60,12 +61,16 @@ export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) 
         accessToken,
         landingPath
       );
+      const realtime = await fetchGa4RealtimeMetricsWithAccessToken(propertyId, accessToken).catch(
+        () => null
+      );
       return buildGa4Diagnostics({
         domain,
         measurementId,
         landingPath,
         dataApiConfigured: true,
         metrics,
+        realtime,
       });
     } catch (error) {
       return buildGa4Diagnostics({

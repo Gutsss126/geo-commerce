@@ -1,5 +1,5 @@
 import { createSign } from "node:crypto";
-import type { Ga4TrafficMetrics } from "./diagnostics";
+import type { Ga4RealtimeMetrics, Ga4TrafficMetrics } from "./diagnostics";
 
 const scope = "https://www.googleapis.com/auth/analytics.readonly";
 
@@ -186,5 +186,35 @@ export async function fetchGa4LandingPageMetricsWithAccessToken(
     sessions: Number(totals[1]?.value ?? 0),
     conversions: Number(totals[2]?.value ?? 0),
     engagementRate: Number(totals[3]?.value ?? 0),
+  };
+}
+
+export async function fetchGa4RealtimeMetricsWithAccessToken(
+  propertyId: string,
+  accessToken: string
+): Promise<Ga4RealtimeMetrics> {
+  const response = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        metrics: [{ name: "activeUsers" }],
+      }),
+    }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error?.message ?? "GA4 Realtime API request failed");
+  }
+
+  const totals = payload.totals?.[0]?.metricValues ?? [];
+  const firstRow = payload.rows?.[0]?.metricValues ?? [];
+  return {
+    activeUsers: Number(totals[0]?.value ?? firstRow[0]?.value ?? 0),
   };
 }

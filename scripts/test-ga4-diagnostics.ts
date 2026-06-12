@@ -64,11 +64,16 @@ const ready = buildGa4Diagnostics({
     conversions: 9,
     engagementRate: 0.62,
   },
+  realtime: {
+    activeUsers: 2,
+  },
 });
 
 assert.equal(ready.status, "ready");
 assert.ok(ready.traffic);
 assert.equal(ready.traffic.activeUsers, 128);
 assert.equal(ready.traffic.engagementRateLabel, "62.0%");
+assert.equal(ready.realtime?.activeUsers, 2);
+assert.equal(ready.checks.some((check) => check.id === "realtime"), true);
 
 console.log("GA4 diagnostics tests passed");
