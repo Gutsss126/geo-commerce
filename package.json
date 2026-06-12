@@ -14,7 +14,7 @@
     "db:seed:fancrafti": "tsx scripts/seed-fancrafti.ts",
     "docs:word": "node scripts/generate-word-docs.mjs",
     "test:ga4": "tsx scripts/test-ga4-diagnostics.ts",
-    "test:geo": "tsx scripts/test-geo-audit-v2.ts",
+    "test:geo": "tsx scripts/test-geo-audit-v2.ts && tsx scripts/test-geo-page-evidence.ts && tsx scripts/test-geo-page-evidence-extractor.ts",
     "cli": "tsx packages/cli/src/index.ts"
   },
   "dependencies": {

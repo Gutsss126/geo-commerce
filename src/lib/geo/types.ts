@@ -43,6 +43,12 @@ export type ProductGeoInput = {
   category?: string | null;
   price?: number | null;
   url?: string | null;
+  pageText?: string | null;
+  jsonLdTypes?: string[];
+  hasProductSchema?: boolean;
+  hasOfferSchema?: boolean;
+  hasAvailability?: boolean;
+  hasReviewSignal?: boolean;
 };
 
 export type SiteGeoInput = {
@@ -50,4 +56,16 @@ export type SiteGeoInput = {
   domain: string;
   brandVoice?: string | null;
   productCount?: number;
+  pageEvidence?: SitePageEvidence | null;
+};
+
+export type SitePageEvidence = {
+  homepageText?: string | null;
+  landingPageText?: string | null;
+  policyText?: string | null;
+  llmsTxtFound?: boolean;
+  sitemapFound?: boolean;
+  robotsTxtFound?: boolean;
+  productSchemaCount?: number;
+  productPageCount?: number;
 };

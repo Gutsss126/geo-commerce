@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { auditProduct, auditSite } from "@/lib/geo/analyzer";
+import { collectProductPageEvidence, collectSitePageEvidence } from "@/lib/geo/page-evidence";
 import {
   generateLlmsTxt,
   optimizeDescription,
@@ -32,7 +33,8 @@ export async function createSite(formData: FormData) {
     },
   });
 
-  const report = auditSite({ name, domain, brandVoice, productCount: 0 });
+  const pageEvidence = await collectSitePageEvidence(domain);
+  const report = auditSite({ name, domain, brandVoice, productCount: 0, pageEvidence });
   await prisma.geoAudit.create({
     data: {
       siteId: site.id,
@@ -62,7 +64,19 @@ export async function createProduct(formData: FormData) {
     data: { siteId, title, slug, sku, description, category, price, url },
   });
 
-  const report = auditProduct({ title, description, category, price, url });
+  const pageEvidence = await collectProductPageEvidence(url);
+  const report = auditProduct({
+    title,
+    description,
+    category,
+    price,
+    url,
+    pageText: pageEvidence?.pageText,
+    hasProductSchema: pageEvidence?.hasProductSchema,
+    hasOfferSchema: pageEvidence?.hasOfferSchema,
+    hasAvailability: pageEvidence?.hasAvailability,
+    hasReviewSignal: pageEvidence?.hasReviewSignal,
+  });
   await prisma.product.update({
     where: { id: product.id },
     data: { geoScore: report.overallScore, lastAuditAt: new Date() },
@@ -87,12 +101,18 @@ export async function runProductAudit(productId: string) {
     include: { site: true },
   });
 
+  const pageEvidence = await collectProductPageEvidence(product.url);
   const report = auditProduct({
     title: product.title,
     description: product.description,
     category: product.category,
     price: product.price,
     url: product.url,
+    pageText: pageEvidence?.pageText,
+    hasProductSchema: pageEvidence?.hasProductSchema,
+    hasOfferSchema: pageEvidence?.hasOfferSchema,
+    hasAvailability: pageEvidence?.hasAvailability,
+    hasReviewSignal: pageEvidence?.hasReviewSignal,
   });
 
   await prisma.product.update({
@@ -119,11 +139,13 @@ export async function runSiteAudit(siteId: string) {
     include: { _count: { select: { products: true } } },
   });
 
+  const pageEvidence = await collectSitePageEvidence(site.domain);
   const report = auditSite({
     name: site.name,
     domain: site.domain,
     brandVoice: site.brandVoice,
     productCount: site._count.products,
+    pageEvidence,
   });
 
   await prisma.geoAudit.create({

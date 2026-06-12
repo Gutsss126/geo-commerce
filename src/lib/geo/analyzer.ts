@@ -121,7 +121,8 @@ function buildReport(checks: GeoCheckResult[], target: string): GeoAuditReport {
 export function auditProduct(input: ProductGeoInput): GeoAuditReport {
   const title = input.title?.trim() ?? "";
   const description = input.description?.trim() ?? "";
-  const combined = `${title}\n${description}`;
+  const pageText = input.pageText?.trim() ?? "";
+  const combined = `${title}\n${description}\n${pageText}`;
   const checks: GeoCheckResult[] = [];
 
   checks.push(
@@ -164,7 +165,11 @@ export function auditProduct(input: ProductGeoInput): GeoAuditReport {
     check(
       "price-trust",
       "价格与购买信号",
-      typeof input.price === "number" && input.price > 0 ? 10 : 3,
+      typeof input.price === "number" && input.price > 0
+        ? includesAny(combined, ["shipping", "return", "refund", "delivery", "secure"])
+          ? 10
+          : 8
+        : 3,
       10,
       typeof input.price === "number" && input.price > 0 ? `价格: ${input.price}` : "缺少价格",
       "商品页应稳定展示价格、库存、配送和退货信息，方便搜索系统形成可购买判断。"
@@ -175,9 +180,21 @@ export function auditProduct(input: ProductGeoInput): GeoAuditReport {
     check(
       "product-schema-readiness",
       "Product Schema 准备度",
-      input.url?.startsWith("http") && input.price ? 14 : input.url?.startsWith("http") ? 9 : 4,
+      input.hasProductSchema && input.hasOfferSchema && input.hasAvailability
+        ? 14
+        : input.hasProductSchema && input.hasOfferSchema
+          ? 11
+          : input.url?.startsWith("http") && input.price
+            ? 9
+            : input.url?.startsWith("http")
+              ? 6
+              : 4,
       14,
-      input.url?.startsWith("http") ? "有规范商品 URL" : "缺少规范商品 URL",
+      input.hasProductSchema
+        ? "检测到 Product JSON-LD 结构化数据"
+        : input.url?.startsWith("http")
+          ? "有规范商品 URL，但仍需确认 Product Schema"
+          : "缺少规范商品 URL",
       "确保商品页有 Product JSON-LD，至少包含 name、image、description、offers.price、availability、url。"
     )
   );
@@ -210,7 +227,9 @@ export function auditProduct(input: ProductGeoInput): GeoAuditReport {
     check(
       "buyer-proof",
       "信任证据",
-      includesAny(combined, ["review", "rating", "customer", "handmade", "studio"]) ? 10 : 4,
+      input.hasReviewSignal || includesAny(combined, ["review", "rating", "customer", "handmade", "studio"])
+        ? 10
+        : 4,
       10,
       "检查商品是否提供评价、手工制作或品牌证据",
       "补充评价、制作过程、实拍图、品牌故事或买家使用场景，提升被 AI 推荐时的可信度。"
@@ -225,6 +244,9 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
   const domain = input.domain?.trim() ?? "";
   const brandVoice = input.brandVoice?.trim() ?? "";
   const productCount = input.productCount ?? 0;
+  const evidence = input.pageEvidence;
+  const siteText = `${brandVoice}\n${evidence?.homepageText ?? ""}\n${evidence?.landingPageText ?? ""}`;
+  const policyText = evidence?.policyText ?? "";
   const checks: GeoCheckResult[] = [];
 
   checks.push(
@@ -242,9 +264,15 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
     check(
       "offer-clarity",
       "核心销售主张",
-      brandVoice.length >= 40 ? 16 : brandVoice.length >= 12 ? 10 : 4,
+      siteText.length >= 120 && includesAny(siteText, ["handmade", "resin", "lamp", "gift", "desk"])
+        ? 16
+        : brandVoice.length >= 40
+          ? 13
+          : brandVoice.length >= 12
+            ? 10
+            : 4,
       16,
-      brandVoice ? "已填写品牌语调/定位" : "缺少一句话销售主张",
+      siteText.length > brandVoice.length ? "真实页面包含销售主张和商品语义" : brandVoice ? "已填写品牌语调/定位" : "缺少一句话销售主张",
       "用一句话说清楚：卖什么、适合谁、为什么值得买。不要只写口号。"
     )
   );
@@ -253,7 +281,7 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
     check(
       "audience-fit",
       "目标用户和场景",
-      includesAny(brandVoice, ["gift", "desk", "bedroom", "fan", "gamer", "home", "collector"]) ? 12 : 5,
+      includesAny(siteText, ["gift", "desk", "bedroom", "fan", "gamer", "home", "collector", "anime"]) ? 12 : 5,
       12,
       "检查是否出现使用场景或目标人群",
       "在首页和主落地页明确适合送礼、卧室桌面、游戏房、粉丝收藏等具体场景。"
@@ -264,9 +292,19 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
     check(
       "catalog-coverage",
       "商品目录覆盖",
-      productCount >= 20 ? 16 : productCount >= 8 ? 11 : productCount >= 1 ? 7 : 2,
+      (evidence?.productSchemaCount ?? 0) >= 8
+        ? 16
+        : productCount >= 20
+          ? 16
+          : productCount >= 8
+            ? 11
+            : productCount >= 1
+              ? 7
+              : 2,
       16,
-      `已同步 ${productCount} 个商品`,
+      evidence?.productSchemaCount
+        ? `检测到 ${evidence.productSchemaCount} 个 Product Schema 信号`
+        : `已同步 ${productCount} 个商品`,
       "优先同步并优化 Top 20 SKU，让 AI 有足够商品实体和内部链接可理解。"
     )
   );
@@ -275,9 +313,13 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
     check(
       "policy-clarity",
       "配送/退货/信任信息",
-      brandVoice ? 8 : 4,
+      includesAny(policyText, ["shipping", "delivery", "return", "refund", "contact", "damaged"])
+        ? 12
+        : includesAny(siteText, ["shipping", "delivery", "return", "refund"])
+          ? 8
+          : 4,
       12,
-      "需要检查站内是否有 shipping、returns、contact、about 等页面",
+      policyText ? "检测到配送/退货/联系等政策内容" : "需要检查站内是否有 shipping、returns、contact、about 等页面",
       "确保首页、商品页和落地页能找到配送、退货、联系、支付安全和品牌介绍。"
     )
   );
@@ -286,9 +328,13 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
     check(
       "llms-txt",
       "llms.txt 与 AI 爬虫说明",
-      8,
+      evidence?.llmsTxtFound ? 12 : evidence?.robotsTxtFound && evidence?.sitemapFound ? 8 : 5,
       12,
-      "可在工具中心生成并部署 llms.txt",
+      evidence?.llmsTxtFound
+        ? "检测到 /llms.txt"
+        : evidence?.robotsTxtFound || evidence?.sitemapFound
+          ? "检测到部分爬虫基础文件，仍建议补 /llms.txt"
+          : "可在工具中心生成并部署 llms.txt",
       "在站点根目录部署 /llms.txt，声明核心页面、产品目录、联系邮箱和允许 AI 抓取的范围。"
     )
   );
