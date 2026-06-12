@@ -1,5 +1,5 @@
 import { createSign } from "node:crypto";
-import type { Ga4RealtimeMetrics, Ga4TrafficMetrics } from "./diagnostics";
+import type { Ga4EventMetric, Ga4RealtimeMetrics, Ga4TrafficMetrics } from "./diagnostics";
 
 const scope = "https://www.googleapis.com/auth/analytics.readonly";
 
@@ -217,4 +217,88 @@ export async function fetchGa4RealtimeMetricsWithAccessToken(
   return {
     activeUsers: Number(totals[0]?.value ?? firstRow[0]?.value ?? 0),
   };
+}
+
+function parseEventRows(payload: {
+  rows?: Array<{
+    dimensionValues?: Array<{ value?: string }>;
+    metricValues?: Array<{ value?: string }>;
+  }>;
+}): Ga4EventMetric[] {
+  return (payload.rows ?? [])
+    .map((row) => ({
+      name: row.dimensionValues?.[0]?.value ?? "(not set)",
+      count: Number(row.metricValues?.[0]?.value ?? 0),
+      activeUsers: Number(row.metricValues?.[1]?.value ?? 0),
+    }))
+    .filter((event) => event.name !== "(not set)" && (event.count > 0 || event.activeUsers > 0));
+}
+
+export async function fetchGa4LandingPageEventsWithAccessToken(
+  propertyId: string,
+  accessToken: string,
+  landingPath: string
+): Promise<Ga4EventMetric[]> {
+  const response = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+        dimensions: [{ name: "eventName" }],
+        metrics: [{ name: "eventCount" }, { name: "activeUsers" }],
+        limit: 20,
+        orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "pagePathPlusQueryString",
+            stringFilter: {
+              matchType: "BEGINS_WITH",
+              value: landingPath,
+            },
+          },
+        },
+      }),
+    }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error?.message ?? "GA4 event report request failed");
+  }
+
+  return parseEventRows(payload);
+}
+
+export async function fetchGa4RealtimeEventsWithAccessToken(
+  propertyId: string,
+  accessToken: string
+): Promise<Ga4EventMetric[]> {
+  const response = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        dimensions: [{ name: "eventName" }],
+        metrics: [{ name: "eventCount" }, { name: "activeUsers" }],
+        limit: 20,
+        orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+      }),
+    }
+  );
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error?.message ?? "GA4 realtime event request failed");
+  }
+
+  return parseEventRows(payload);
 }

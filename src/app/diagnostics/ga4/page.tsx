@@ -35,6 +35,41 @@ function OAuthNotice({ status }: { status?: string }) {
   );
 }
 
+function EventRows({
+  events,
+  emptyCopy,
+}: {
+  events: Array<{ name: string; count: number; activeUsers: number }>;
+  emptyCopy: string;
+}) {
+  if (!events.length) {
+    return <p className="mt-4 text-sm text-slate-500">{emptyCopy}</p>;
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-lg border border-[var(--border)]">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-slate-900/60 text-xs text-slate-500">
+          <tr>
+            <th className="px-3 py-2 font-medium">Event</th>
+            <th className="px-3 py-2 text-right font-medium">Count</th>
+            <th className="px-3 py-2 text-right font-medium">Users</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[var(--border)]">
+          {events.map((event) => (
+            <tr key={event.name}>
+              <td className="px-3 py-2 font-medium text-slate-200">{event.name}</td>
+              <td className="px-3 py-2 text-right text-slate-300">{event.count}</td>
+              <td className="px-3 py-2 text-right text-slate-300">{event.activeUsers}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default async function Ga4DiagnosticsPage({
   searchParams,
 }: {
@@ -154,6 +189,32 @@ export default async function Ga4DiagnosticsPage({
         </div>
       </Card>
 
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <Card>
+          <CardTitle>落地页动作漏斗</CardTitle>
+          <CardDescription>基于近 28 天 GA4 事件，先看用户是否从访问走向点击与结账意图。</CardDescription>
+          <div className="mt-4 space-y-3">
+            {diagnostics.funnel.map((step, index) => (
+              <div key={step.id} className="rounded-lg border border-[var(--border)] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Step {index + 1}</p>
+                    <p className="font-medium">{step.label}</p>
+                  </div>
+                  <p className="text-2xl font-semibold">{step.count}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <CardTitle>实时用户动作</CardTitle>
+          <CardDescription>最近 30 分钟事件，用来确认投放访问和按钮点击是否正在发生。</CardDescription>
+          <EventRows events={diagnostics.realtimeEvents} emptyCopy="暂时没有实时事件；打开落地页并点击按钮后刷新本页。" />
+        </Card>
+      </div>
+
       {diagnostics.traffic && (
         <Card>
           <div className="flex items-center gap-2">
@@ -180,6 +241,12 @@ export default async function Ga4DiagnosticsPage({
           </div>
         </Card>
       )}
+
+      <Card>
+        <CardTitle>近 28 天事件排行</CardTitle>
+        <CardDescription>GA4 按事件名汇总 /tiktok/ 落地页动作，后续按钮点击事件会出现在这里。</CardDescription>
+        <EventRows events={diagnostics.events} emptyCopy="暂时没有可展示的历史事件；GA4 标准报表同步后会逐步出现。" />
+      </Card>
 
       <Card>
         <CardTitle>诊断检查</CardTitle>

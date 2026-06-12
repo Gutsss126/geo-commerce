@@ -9,6 +9,18 @@ export type Ga4RealtimeMetrics = {
   activeUsers: number;
 };
 
+export type Ga4EventMetric = {
+  name: string;
+  count: number;
+  activeUsers: number;
+};
+
+export type Ga4FunnelStep = {
+  id: "visit" | "primary_click" | "cart" | "checkout";
+  label: string;
+  count: number;
+};
+
 export type Ga4DiagnosticCheck = {
   id: string;
   label: string;
@@ -24,6 +36,8 @@ export type Ga4DiagnosticsInput = {
   dataApiConfigured: boolean;
   metrics?: Ga4TrafficMetrics | null;
   realtime?: Ga4RealtimeMetrics | null;
+  events?: Ga4EventMetric[] | null;
+  realtimeEvents?: Ga4EventMetric[] | null;
   dataApiError?: string | null;
 };
 
@@ -42,6 +56,9 @@ export type Ga4Diagnostics = {
   };
   traffic: (Ga4TrafficMetrics & { engagementRateLabel: string }) | null;
   realtime: Ga4RealtimeMetrics | null;
+  events: Ga4EventMetric[];
+  realtimeEvents: Ga4EventMetric[];
+  funnel: Ga4FunnelStep[];
   checks: Ga4DiagnosticCheck[];
   generatedAt: string;
 };
@@ -56,10 +73,43 @@ export function normalizeLandingPath(value: string) {
   return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
+function findEventCount(events: Ga4EventMetric[], names: string[]) {
+  return events
+    .filter((event) => names.includes(event.name))
+    .reduce((total, event) => total + event.count, 0);
+}
+
+export function buildGa4Funnel(events: Ga4EventMetric[]): Ga4FunnelStep[] {
+  return [
+    {
+      id: "visit",
+      label: "访问 /tiktok/",
+      count: findEventCount(events, ["page_view"]),
+    },
+    {
+      id: "primary_click",
+      label: "点击主按钮",
+      count: findEventCount(events, ["shop_bundle_click", "top_sellers_click", "product_card_click"]),
+    },
+    {
+      id: "cart",
+      label: "加购",
+      count: findEventCount(events, ["add_to_cart", "add_to_cart_click"]),
+    },
+    {
+      id: "checkout",
+      label: "结账意图",
+      count: findEventCount(events, ["begin_checkout", "checkout_click", "checkout_start"]),
+    },
+  ];
+}
+
 export function buildGa4Diagnostics(input: Ga4DiagnosticsInput): Ga4Diagnostics {
   const domain = input.domain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
   const measurementId = input.measurementId?.trim() || null;
   const landingPath = normalizeLandingPath(input.landingPath);
+  const events = input.events ?? [];
+  const realtimeEvents = input.realtimeEvents ?? [];
   const checks: Ga4DiagnosticCheck[] = [];
 
   const measurementValid = isValidGa4MeasurementId(measurementId);
@@ -147,6 +197,9 @@ export function buildGa4Diagnostics(input: Ga4DiagnosticsInput): Ga4Diagnostics 
         }
       : null,
     realtime: input.realtime ?? null,
+    events,
+    realtimeEvents,
+    funnel: buildGa4Funnel(events),
     checks,
     generatedAt: new Date().toISOString(),
   };

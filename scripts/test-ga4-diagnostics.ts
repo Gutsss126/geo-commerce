@@ -67,6 +67,15 @@ const ready = buildGa4Diagnostics({
   realtime: {
     activeUsers: 2,
   },
+  events: [
+    { name: "page_view", count: 42, activeUsers: 18 },
+    { name: "shop_bundle_click", count: 7, activeUsers: 5 },
+    { name: "checkout_click", count: 1, activeUsers: 1 },
+  ],
+  realtimeEvents: [
+    { name: "page_view", count: 3, activeUsers: 2 },
+    { name: "shop_bundle_click", count: 1, activeUsers: 1 },
+  ],
 });
 
 assert.equal(ready.status, "ready");
@@ -75,5 +84,17 @@ assert.equal(ready.traffic.activeUsers, 128);
 assert.equal(ready.traffic.engagementRateLabel, "62.0%");
 assert.equal(ready.realtime?.activeUsers, 2);
 assert.equal(ready.checks.some((check) => check.id === "realtime"), true);
+assert.equal(ready.events.length, 3);
+assert.equal(ready.events[1]?.name, "shop_bundle_click");
+assert.equal(ready.realtimeEvents.length, 2);
+assert.deepEqual(
+  ready.funnel.map((step) => [step.id, step.count]),
+  [
+    ["visit", 42],
+    ["primary_click", 7],
+    ["cart", 0],
+    ["checkout", 1],
+  ]
+);
 
 console.log("GA4 diagnostics tests passed");

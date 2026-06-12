@@ -1,7 +1,9 @@
 import { buildGa4Diagnostics } from "./diagnostics";
 import {
+  fetchGa4LandingPageEventsWithAccessToken,
   fetchGa4LandingPageMetrics,
   fetchGa4LandingPageMetricsWithAccessToken,
+  fetchGa4RealtimeEventsWithAccessToken,
   fetchGa4RealtimeMetricsWithAccessToken,
   getGa4DataApiConfigFromEnv,
   isGa4DataApiConfigured,
@@ -64,6 +66,15 @@ export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) 
       const realtime = await fetchGa4RealtimeMetricsWithAccessToken(propertyId, accessToken).catch(
         () => null
       );
+      const events = await fetchGa4LandingPageEventsWithAccessToken(
+        propertyId,
+        accessToken,
+        landingPath
+      ).catch(() => null);
+      const realtimeEvents = await fetchGa4RealtimeEventsWithAccessToken(
+        propertyId,
+        accessToken
+      ).catch(() => null);
       return buildGa4Diagnostics({
         domain,
         measurementId,
@@ -71,6 +82,8 @@ export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) 
         dataApiConfigured: true,
         metrics,
         realtime,
+        events,
+        realtimeEvents,
       });
     } catch (error) {
       return buildGa4Diagnostics({
