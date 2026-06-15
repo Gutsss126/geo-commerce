@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
-import { formatGeoScoreGap } from "@/lib/geo/display";
+import { formatGeoScoreGap, getGeoOptimizationPlan } from "@/lib/geo/display";
 import type { GeoActionItem, GeoAuditReport, GeoAuditSection, GeoCheckResult, GeoEvidenceItem } from "@/lib/geo/types";
 
 function parseReport(report: string): GeoAuditReport | null {
@@ -67,6 +67,61 @@ function SectionCard({ section }: { section: GeoAuditSection }) {
         {section.score}/{section.maxScore} · {ratio}%
       </p>
     </div>
+  );
+}
+
+function CheckRow({ item }: { item: GeoCheckResult }) {
+  const scoreGap = formatGeoScoreGap(item);
+  const optimizationPlan = getGeoOptimizationPlan(item);
+
+  return (
+    <details className="group rounded-lg border border-[var(--border)] p-4">
+      <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-medium">{item.name}</p>
+          {scoreGap && <p className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">缺口：{scoreGap}</p>}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-blue-300">
+            {item.score}/{item.maxScore}
+          </span>
+          <CheckStatusPill status={item.status} />
+          <span className="text-xs text-slate-500 group-open:hidden">展开</span>
+          <span className="hidden text-xs text-slate-500 group-open:inline">收起</span>
+        </div>
+      </summary>
+
+      <div className="mt-4 border-t border-[var(--border)] pt-4">
+        <p className="text-sm text-slate-400">{item.message}</p>
+        {item.evidence && <p className="mt-3 text-sm text-slate-300">证据：{item.evidence}</p>}
+        <p className="mt-2 text-xs text-slate-500">建议：{item.recommendation}</p>
+
+        {optimizationPlan && (
+          <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+            <p className="font-medium text-blue-200">{optimizationPlan.title}</p>
+            <p className="mt-1 text-sm text-slate-400">{optimizationPlan.summary}</p>
+            <div className="mt-4 grid gap-2 md:grid-cols-2">
+              {optimizationPlan.events.map((event) => (
+                <div key={event.name} className="rounded border border-[var(--border)] p-3">
+                  <p className="font-mono text-sm text-blue-200">{event.name}</p>
+                  <p className="mt-1 text-xs text-slate-400">{event.purpose}</p>
+                  <p className="mt-1 text-xs text-slate-500">位置：{event.placement}</p>
+                </div>
+              ))}
+            </div>
+            <ol className="mt-4 space-y-2 text-sm text-slate-300">
+              {optimizationPlan.steps.map((step, index) => (
+                <li key={step}>{index + 1}. {step}</li>
+              ))}
+            </ol>
+            <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+              <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制代码</summary>
+              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{optimizationPlan.code}</pre>
+            </details>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
 
@@ -177,30 +232,7 @@ export default async function GeoAuditV2Page() {
           <CardDescription>每一项都展示证据、得分和下一步动作，方便运营逐条核对。</CardDescription>
           <div className="mt-4 space-y-3">
             {checks.map((item) => (
-              <div key={item.id} className="rounded-lg border border-[var(--border)] p-4">
-                {(() => {
-                  const scoreGap = formatGeoScoreGap(item);
-                  return (
-                    <>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="mt-1 text-sm text-slate-400">{item.message}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-blue-300">
-                      {item.score}/{item.maxScore}
-                    </span>
-                    <CheckStatusPill status={item.status} />
-                  </div>
-                </div>
-                {scoreGap && <p className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">缺口：{scoreGap}</p>}
-                {item.evidence && <p className="mt-3 text-sm text-slate-300">证据：{item.evidence}</p>}
-                <p className="mt-2 text-xs text-slate-500">建议：{item.recommendation}</p>
-                    </>
-                  );
-                })()}
-              </div>
+              <CheckRow key={item.id} item={item} />
             ))}
           </div>
         </Card>

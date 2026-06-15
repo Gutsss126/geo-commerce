@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { formatGeoScoreGap } from "../src/lib/geo/display";
+import { formatGeoScoreGap, getGeoOptimizationPlan } from "../src/lib/geo/display";
 
 assert.equal(
   formatGeoScoreGap({
@@ -15,6 +15,21 @@ assert.equal(
     score: 16,
     maxScore: 16,
     message: "品牌和域名清晰",
+  }),
+  null
+);
+
+const ga4Plan = getGeoOptimizationPlan({
+  id: "measurement-readiness",
+});
+
+assert.equal(ga4Plan?.title, "GA4 事件优化方案");
+assert.ok(ga4Plan?.events.some((event) => event.name === "shop_bundle_click"));
+assert.ok(ga4Plan?.code.includes("shop_bundle_click"));
+
+assert.equal(
+  getGeoOptimizationPlan({
+    id: "brand-entity",
   }),
   null
 );
