@@ -1,4 +1,4 @@
-import type { GeoAuditReport, GeoCheckResult } from "./types";
+import type { GeoActionItem, GeoAuditReport, GeoCheckResult } from "./types";
 
 export function formatGeoScoreGap(check: Pick<GeoCheckResult, "score" | "maxScore" | "message">) {
   const gap = check.maxScore - check.score;
@@ -64,6 +64,38 @@ export type GeoOptimizationPlan = {
   events?: Array<{ name: string; purpose: string; placement: string }>;
   code?: string;
 };
+
+export type GeoExecutionTask = {
+  stepLabel: string;
+  title: string;
+  priority: GeoActionItem["priority"];
+  target: string;
+  goal: string;
+  action: string;
+  copyBlock: string | null;
+  validation: string;
+};
+
+export function getGeoExecutionTasks(
+  actionItems: GeoActionItem[],
+  domain?: string | null
+): GeoExecutionTask[] {
+  const siteDomain = normalizeDomain(domain);
+  return actionItems.slice(0, 3).map((item, index) => {
+    const plan = getGeoOptimizationPlan({ id: item.id });
+    const copyBlock = plan?.template ?? plan?.code ?? null;
+    return {
+      stepLabel: `Task ${index + 1}`,
+      title: item.title,
+      priority: item.priority,
+      target: item.target || siteDomain,
+      goal: item.why,
+      action: plan ? plan.steps[0] ?? item.fix : item.fix,
+      copyBlock,
+      validation: item.validation,
+    };
+  });
+}
 
 export type GeoFixWorkflowAction = {
   kind: "audit" | "link";

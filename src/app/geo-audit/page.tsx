@@ -7,6 +7,7 @@ import { ScoreBadge } from "@/components/score-badge";
 import {
   formatGeoAuditDelta,
   formatGeoScoreGap,
+  getGeoExecutionTasks,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
   getGeoStrategyReadiness,
@@ -468,6 +469,57 @@ function AuditDeltaCard({
   );
 }
 
+function ExecutionTasksCard({ actionItems, domain }: { actionItems: GeoActionItem[]; domain?: string | null }) {
+  const tasks = getGeoExecutionTasks(actionItems, domain);
+  if (tasks.length === 0) return null;
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>一键执行清单</CardTitle>
+          <CardDescription>把当前最重要的 3 个问题转成运营可执行任务，先改、再复查。</CardDescription>
+        </div>
+        <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-200">
+          {tasks.length} tasks
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        {tasks.map((task) => (
+          <div key={`${task.stepLabel}-${task.title}`} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-medium text-blue-300">{task.stepLabel}</p>
+              <PriorityPill priority={task.priority} />
+            </div>
+            <p className="mt-2 font-medium text-slate-100">{task.title}</p>
+            <p className="mt-1 text-xs text-slate-500">{task.target}</p>
+            <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
+              <p>
+                <span className="text-slate-300">目标：</span>
+                {task.goal}
+              </p>
+              <p>
+                <span className="text-slate-300">动作：</span>
+                {task.action}
+              </p>
+              <p>
+                <span className="text-slate-300">复查：</span>
+                {task.validation}
+              </p>
+            </div>
+            {task.copyBlock && (
+              <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/70 p-3">
+                <summary className="cursor-pointer text-xs font-medium text-emerald-200">可复制内容</summary>
+                <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{task.copyBlock}</pre>
+              </details>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
@@ -554,6 +606,7 @@ export default async function GeoAuditV2Page() {
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
       <PageExperienceCard report={report?.pageExperience} />
+      <ExecutionTasksCard actionItems={topActions} domain={primarySite?.domain} />
 
       {evidenceItems.length > 0 && (
         <Card>
