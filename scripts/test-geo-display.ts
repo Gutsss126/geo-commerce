@@ -60,6 +60,10 @@ const requiredPlanIds = [
   "commercial-intent",
   "informational-intent",
   "long-tail-intent",
+  "seo-title-description",
+  "canonical-url",
+  "internal-link-entry",
+  "external-search-data",
 ];
 
 for (const id of requiredPlanIds) {
@@ -74,6 +78,10 @@ assert.ok(getGeoOptimizationPlan({ id: "price-trust" })?.template?.includes("Shi
 assert.ok(getGeoOptimizationPlan({ id: "commercial-intent" })?.template?.includes("Shop"));
 assert.ok(getGeoOptimizationPlan({ id: "informational-intent" })?.template?.includes("FAQ"));
 assert.ok(getGeoOptimizationPlan({ id: "long-tail-intent" })?.template?.includes("anime fan"));
+assert.ok(getGeoOptimizationPlan({ id: "seo-title-description" })?.template?.includes("title"));
+assert.ok(getGeoOptimizationPlan({ id: "canonical-url" })?.template?.includes("canonical"));
+assert.ok(getGeoOptimizationPlan({ id: "internal-link-entry" })?.template?.includes("Shop"));
+assert.ok(getGeoOptimizationPlan({ id: "external-search-data" })?.steps.some((step) => step.includes("Search Console")));
 
 assert.equal(getGeoOptimizationPlan({ id: "unknown-check" }), null);
 

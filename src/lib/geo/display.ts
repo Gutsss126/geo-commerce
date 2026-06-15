@@ -234,6 +234,68 @@ export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOp
       template:
         "Made for anime fan gifts, gaming room decor, bedroom desk lighting, collector shelves, and cozy handmade home decor.",
     },
+    "seo-title-description": {
+      title: "SEO 标题与描述优化方案",
+      summary: "让首页和落地页在搜索结果、AI 摘要和浏览器标签里都能被清楚理解。",
+      why: "title 和 meta description 是搜索系统理解页面主题的基础入口。缺少它们时，即使页面内容不错，也容易被错误摘要或低质量展示。",
+      steps: [
+        "给首页和 /tiktok/ 分别设置唯一 title，不要所有页面共用一个标题。",
+        "meta description 控制在一句自然语言里，说明品牌、品类、目标用户和当前优惠。",
+        "标题和描述要和页面真实内容一致，避免只堆关键词。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认 SEO 标题与描述检测通过。",
+        "打开页面源码或浏览器检查 title 与 description 是否已经更新。",
+      ],
+      template:
+        "Homepage title: FanCrafti Handmade Resin LED Lamps for Gifts and Desk Decor\nHomepage description: Shop handmade resin LED lamps for anime fans, gamers, bedrooms, collector shelves, and unique gift ideas.\n\n/tiktok/ title: TikTok Favorites - Pick Any 3 FanCrafti Resin Lamps & Save\n/tiktok/ description: Pick any 3 handmade resin LED lamps and save on FanCrafti TikTok favorites for gifts, gaming rooms, and bedroom desks.",
+    },
+    "canonical-url": {
+      title: "Canonical 规范链接优化方案",
+      summary: "告诉搜索系统哪个 URL 是页面的标准版本。",
+      why: "电商页面常见重复参数、活动链接和尾斜杠差异。canonical 能帮助搜索系统把权重和理解集中到一个标准 URL。",
+      steps: [
+        "确认首页 canonical 指向 https://fancrafti.com/。",
+        "确认 /tiktok/ canonical 指向 https://fancrafti.com/tiktok/。",
+        "避免 canonical 指向错误域名、预览链接或带追踪参数的 URL。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认 Canonical 规范链接通过。",
+        "打开页面源码，搜索 rel=\"canonical\"。",
+      ],
+      template:
+        '<link rel="canonical" href="https://fancrafti.com/tiktok/" />',
+    },
+    "internal-link-entry": {
+      title: "站内链接入口优化方案",
+      summary: "让首页和落地页能自然通向商品、FAQ、配送退货和品牌信任页面。",
+      why: "AI 和搜索系统不只看一个页面，还会通过站内链接理解网站结构。落地页如果没有清晰入口，用户和爬虫都会断在首屏。",
+      steps: [
+        "在 /tiktok/ 加入 Shop Bundle、See Top Sellers、FAQ、Shipping/Returns 的入口。",
+        "首页加入到 /tiktok/、Shop、重点商品集合和 About/Contact 的自然链接。",
+        "链接文字要表达目的，不要只写 click here。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认站内链接入口检测提升。",
+        "手动打开 /tiktok/，确认用户能一键进入 Shop、Top Sellers、FAQ 或政策页。",
+      ],
+      template:
+        "Recommended links: Shop Bundle, See Top Sellers, Shipping & Returns, FAQ, About FanCrafti, Contact Support.",
+    },
+    "external-search-data": {
+      title: "外部搜索数据接入方案",
+      summary: "把 SEO 判断从页面证据升级到真实曝光、点击、排名和性能。",
+      why: "页面文本只能判断基础是否合格，不能证明搜索表现。关键词排名、CTR、索引覆盖和 Core Web Vitals 必须接外部数据。",
+      steps: [
+        "下一版接入 Google Search Console，读取页面曝光、点击、CTR 和查询词。",
+        "再接入 PageSpeed 或 CrUX，读取 Core Web Vitals。",
+        "把 SEO 建议和 GA4 行为一起看，避免只为分数优化页面。",
+      ],
+      validation: [
+        "接入后确认工具能显示 Search Console 数据更新时间。",
+        "优先观察 /tiktok/ 和 Top SKU 的曝光、点击、CTR、平均排名变化。",
+      ],
+    },
     "policy-clarity": {
       title: "配送/退货/信任信息优化方案",
       summary: "把购买前最担心的问题放到 AI 和用户都能读到的位置。",

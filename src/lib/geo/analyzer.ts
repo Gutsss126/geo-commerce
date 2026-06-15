@@ -48,7 +48,7 @@ function buildSections(checks: GeoCheckResult[]): GeoAuditSection[] {
     {
       id: "commerce-readability",
       title: "商品机器可读性",
-      checkIds: ["catalog-coverage", "product-schema-readiness", "price-trust", "factual-density", "canonical-url"],
+      checkIds: ["catalog-coverage", "product-schema-readiness", "price-trust", "factual-density", "canonical-url", "internal-link-entry"],
     },
     {
       id: "ai-recommendation-readiness",
@@ -58,7 +58,7 @@ function buildSections(checks: GeoCheckResult[]): GeoAuditSection[] {
     {
       id: "measurement-loop",
       title: "数据验证闭环",
-      checkIds: ["measurement-readiness", "llms-txt"],
+      checkIds: ["measurement-readiness", "llms-txt", "seo-title-description", "external-search-data"],
     },
   ];
 
@@ -174,6 +174,32 @@ function buildSiteEvidenceItems(domain: string, evidence?: SitePageEvidence | nu
       status: evidenceStatus((evidence.productSchemaCount ?? 0) > 0),
       source: "首页 / 落地页 / 商品页",
       detail: `检测到 ${evidence.productSchemaCount ?? 0} 个 Product JSON-LD 信号`,
+    },
+    {
+      id: "seo-title-meta",
+      label: "SEO 标题/描述",
+      status: evidenceStatus(
+        Boolean(evidence.homepageTitle && evidence.landingPageTitle && evidence.homepageMetaDescription && evidence.landingPageMetaDescription),
+        Boolean(evidence.homepageTitle || evidence.landingPageTitle || evidence.homepageMetaDescription || evidence.landingPageMetaDescription)
+      ),
+      source: "首页 / /tiktok/",
+      detail: `首页 title ${evidence.homepageTitle ? "已发现" : "未发现"}，落地页 title ${evidence.landingPageTitle ? "已发现" : "未发现"}，meta description ${
+        evidence.homepageMetaDescription || evidence.landingPageMetaDescription ? "已发现" : "未发现"
+      }`,
+    },
+    {
+      id: "seo-canonical",
+      label: "Canonical",
+      status: evidenceStatus(Boolean(evidence.homepageCanonical && evidence.landingPageCanonical), Boolean(evidence.homepageCanonical || evidence.landingPageCanonical)),
+      source: "首页 / /tiktok/",
+      detail: `首页 canonical ${evidence.homepageCanonical ? "已发现" : "未发现"}，落地页 canonical ${evidence.landingPageCanonical ? "已发现" : "未发现"}`,
+    },
+    {
+      id: "internal-links",
+      label: "站内链接入口",
+      status: evidenceStatus((evidence.homepageInternalLinkCount ?? 0) + (evidence.landingPageInternalLinkCount ?? 0) >= 6, (evidence.homepageInternalLinkCount ?? 0) > 0 || (evidence.landingPageInternalLinkCount ?? 0) > 0),
+      source: "首页 / /tiktok/",
+      detail: `首页发现 ${evidence.homepageInternalLinkCount ?? 0} 个站内链接，落地页发现 ${evidence.landingPageInternalLinkCount ?? 0} 个站内链接`,
     },
   ];
 }
@@ -503,6 +529,67 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
           : "可在工具中心生成并部署 llms.txt",
       "在站点根目录部署 /llms.txt，声明核心页面、产品目录、联系邮箱和允许 AI 抓取的范围。",
       `llms.txt ${evidence?.llmsTxtFound ? "已发现" : "未发现"}；robots.txt ${evidence?.robotsTxtFound ? "已发现" : "未发现"}；sitemap.xml ${evidence?.sitemapFound ? "已发现" : "未发现"}`
+    )
+  );
+
+  const homepageTitle = evidence?.homepageTitle?.trim() ?? "";
+  const landingTitle = evidence?.landingPageTitle?.trim() ?? "";
+  const homepageDescription = evidence?.homepageMetaDescription?.trim() ?? "";
+  const landingDescription = evidence?.landingPageMetaDescription?.trim() ?? "";
+  const titleMetaScore =
+    homepageTitle && landingTitle && homepageDescription && landingDescription
+      ? 12
+      : (homepageTitle || landingTitle) && (homepageDescription || landingDescription)
+        ? 8
+        : 4;
+  checks.push(
+    check(
+      "seo-title-description",
+      "SEO 标题与描述",
+      titleMetaScore,
+      12,
+      titleMetaScore >= 12 ? "首页和落地页都检测到 title 与 meta description" : titleMetaScore >= 8 ? "检测到部分 title/meta description" : "缺少可验证的 title/meta description",
+      "确保首页和核心落地页都有唯一、可读、包含品牌与购买场景的 title 和 meta description。",
+      `首页 title: ${homepageTitle || "未发现"}；落地页 title: ${landingTitle || "未发现"}；首页描述: ${homepageDescription || "未发现"}；落地页描述: ${landingDescription || "未发现"}`
+    )
+  );
+
+  const homepageCanonical = evidence?.homepageCanonical?.trim() ?? "";
+  const landingCanonical = evidence?.landingPageCanonical?.trim() ?? "";
+  checks.push(
+    check(
+      "canonical-url",
+      "Canonical 规范链接",
+      homepageCanonical && landingCanonical ? 10 : homepageCanonical || landingCanonical ? 6 : 3,
+      10,
+      homepageCanonical && landingCanonical ? "首页和落地页都检测到 canonical" : homepageCanonical || landingCanonical ? "只检测到部分 canonical" : "未检测到 canonical",
+      "给首页和核心落地页设置 canonical，避免搜索系统把同一内容拆成多个 URL 理解。",
+      `首页 canonical: ${homepageCanonical || "未发现"}；落地页 canonical: ${landingCanonical || "未发现"}`
+    )
+  );
+
+  const internalLinkTotal = (evidence?.homepageInternalLinkCount ?? 0) + (evidence?.landingPageInternalLinkCount ?? 0);
+  checks.push(
+    check(
+      "internal-link-entry",
+      "站内链接入口",
+      internalLinkTotal >= 8 ? 10 : internalLinkTotal >= 3 ? 6 : 3,
+      10,
+      `检测到 ${internalLinkTotal} 个首页/落地页站内链接`,
+      "确保首页和 /tiktok/ 能自然链接到商品集合、重点 SKU、FAQ、配送退货和品牌介绍页。",
+      `首页 ${evidence?.homepageInternalLinkCount ?? 0} 个，落地页 ${evidence?.landingPageInternalLinkCount ?? 0} 个`
+    )
+  );
+
+  checks.push(
+    check(
+      "external-search-data",
+      "外部搜索表现数据",
+      6,
+      10,
+      "需要接入 Search Console / PageSpeed 后才能判断排名、曝光、点击率和性能",
+      "后续版本应接入 Search Console 和 PageSpeed，把 SEO 结果从页面证据升级为真实搜索表现。",
+      "当前版本不硬猜关键词排名、索引覆盖、Core Web Vitals 或搜索 CTR"
     )
   );
 

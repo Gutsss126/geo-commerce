@@ -12,6 +12,13 @@ export type ProductPageEvidence = JsonLdSignals & {
   pageText: string;
 };
 
+export type SeoSignals = {
+  title: string;
+  metaDescription: string;
+  canonical: string;
+  internalLinkCount: number;
+};
+
 function stripTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
 }
@@ -38,6 +45,52 @@ export function htmlToReadableText(html: string, limit = 6000) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, limit);
+}
+
+function decodeHtmlAttribute(value: string) {
+  return value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .trim();
+}
+
+function extractAttribute(tag: string, attribute: string) {
+  const pattern = new RegExp(`${attribute}\\s*=\\s*["']([^"']+)["']`, "i");
+  return decodeHtmlAttribute(tag.match(pattern)?.[1] ?? "");
+}
+
+function sameSiteHref(href: string, pageUrl: string) {
+  if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return false;
+  if (href.startsWith("/")) return true;
+  try {
+    return new URL(href, pageUrl).hostname === new URL(pageUrl).hostname;
+  } catch {
+    return false;
+  }
+}
+
+export function extractSeoSignals(html: string, pageUrl: string): SeoSignals {
+  const title = decodeHtmlAttribute(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, " ") ?? "");
+  const metaDescriptionTag = Array.from(html.matchAll(/<meta\b[^>]*>/gi))
+    .map((match) => match[0])
+    .find((tag) => extractAttribute(tag, "name").toLowerCase() === "description");
+  const canonicalTag = Array.from(html.matchAll(/<link\b[^>]*>/gi))
+    .map((match) => match[0])
+    .find((tag) => extractAttribute(tag, "rel").toLowerCase().split(/\s+/).includes("canonical"));
+  const internalLinkCount = Array.from(html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)).filter((match) =>
+    sameSiteHref(decodeHtmlAttribute(match[1]), pageUrl)
+  ).length;
+
+  return {
+    title,
+    metaDescription: metaDescriptionTag ? extractAttribute(metaDescriptionTag, "content") : "",
+    canonical: canonicalTag ? extractAttribute(canonicalTag, "href") : "",
+    internalLinkCount,
+  };
 }
 
 function flattenJsonLd(value: unknown): unknown[] {
@@ -125,10 +178,22 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
 
   const homepageSignals = homepageHtml ? extractJsonLdSignals(homepageHtml) : null;
   const landingSignals = landingHtml ? extractJsonLdSignals(landingHtml) : null;
+  const homepageUrl = resolveSiteUrl(domain, "/");
+  const landingUrl = resolveSiteUrl(domain, landingPath);
+  const homepageSeo = homepageHtml ? extractSeoSignals(homepageHtml, homepageUrl) : null;
+  const landingSeo = landingHtml ? extractSeoSignals(landingHtml, landingUrl) : null;
 
   return {
     homepageText: homepageHtml ? htmlToReadableText(homepageHtml) : "",
     landingPageText: landingHtml ? htmlToReadableText(landingHtml) : "",
+    homepageTitle: homepageSeo?.title ?? "",
+    landingPageTitle: landingSeo?.title ?? "",
+    homepageMetaDescription: homepageSeo?.metaDescription ?? "",
+    landingPageMetaDescription: landingSeo?.metaDescription ?? "",
+    homepageCanonical: homepageSeo?.canonical ?? "",
+    landingPageCanonical: landingSeo?.canonical ?? "",
+    homepageInternalLinkCount: homepageSeo?.internalLinkCount ?? 0,
+    landingPageInternalLinkCount: landingSeo?.internalLinkCount ?? 0,
     policyText,
     llmsTxtFound: Boolean(llmsTxt),
     robotsTxtFound: Boolean(robotsTxt),

@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
-import { extractJsonLdSignals, htmlToReadableText, resolveSiteUrl } from "../src/lib/geo/page-evidence";
+import { extractJsonLdSignals, extractSeoSignals, htmlToReadableText, resolveSiteUrl } from "../src/lib/geo/page-evidence";
 
 const html = `
   <html>
     <head>
       <title>FanCrafti Ocean Lamp</title>
+      <meta name="description" content="Handmade resin LED lamps for anime fans and bedroom desks." />
+      <link rel="canonical" href="https://fancrafti.com/tiktok/" />
       <script type="application/ld+json">
         {
           "@context": "https://schema.org",
@@ -23,6 +25,9 @@ const html = `
       <nav>Menu</nav>
       <h1>Handmade Resin LED Lamp</h1>
       <p>Perfect gift for anime fans and bedroom desks.</p>
+      <a href="/shop/">Shop</a>
+      <a href="https://fancrafti.com/products/ocean-lamp">Ocean Lamp</a>
+      <a href="https://example.com/offsite">External</a>
       <script>console.log("ignore");</script>
       <style>body { color: red; }</style>
     </body>
@@ -41,6 +46,12 @@ assert.equal(signals.hasProductSchema, true);
 assert.equal(signals.hasOfferSchema, true);
 assert.equal(signals.hasAvailability, true);
 assert.equal(signals.hasReviewSignal, true);
+
+const seo = extractSeoSignals(html, "https://fancrafti.com/tiktok/");
+assert.equal(seo.title, "FanCrafti Ocean Lamp");
+assert.equal(seo.metaDescription, "Handmade resin LED lamps for anime fans and bedroom desks.");
+assert.equal(seo.canonical, "https://fancrafti.com/tiktok/");
+assert.equal(seo.internalLinkCount, 2);
 
 assert.equal(resolveSiteUrl("fancrafti.com", "/tiktok/"), "https://fancrafti.com/tiktok/");
 assert.equal(resolveSiteUrl("https://fancrafti.com/", "robots.txt"), "https://fancrafti.com/robots.txt");

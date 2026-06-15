@@ -283,6 +283,42 @@ function StrategyReadinessCard() {
   );
 }
 
+function SeoBasicsCard({ checks }: { checks: GeoCheckResult[] }) {
+  const seoCheckIds = ["seo-title-description", "canonical-url", "internal-link-entry", "external-search-data"];
+  const seoChecks = seoCheckIds
+    .map((id) => checks.find((check) => check.id === id))
+    .filter((check): check is GeoCheckResult => Boolean(check));
+
+  if (seoChecks.length === 0) return null;
+
+  const passCount = seoChecks.filter((check) => check.status === "pass").length;
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>SEO 基础健康度</CardTitle>
+          <CardDescription>只看页面可验证的基础信号；排名、曝光和速度需要后续接外部数据。</CardDescription>
+        </div>
+        <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-200">
+          {passCount}/{seoChecks.length}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {seoChecks.map((check) => (
+          <div key={check.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-slate-200">{check.name}</p>
+              <CheckStatusPill status={check.status} />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-500">{check.message}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
@@ -364,6 +400,7 @@ export default async function GeoAuditV2Page() {
       </div>
 
       <StrategyReadinessCard />
+      <SeoBasicsCard checks={checks} />
 
       {evidenceItems.length > 0 && (
         <Card>

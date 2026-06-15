@@ -72,6 +72,14 @@ export type SiteGeoInput = {
 export type SitePageEvidence = {
   homepageText?: string | null;
   landingPageText?: string | null;
+  homepageTitle?: string | null;
+  landingPageTitle?: string | null;
+  homepageMetaDescription?: string | null;
+  landingPageMetaDescription?: string | null;
+  homepageCanonical?: string | null;
+  landingPageCanonical?: string | null;
+  homepageInternalLinkCount?: number;
+  landingPageInternalLinkCount?: number;
   policyText?: string | null;
   llmsTxtFound?: boolean;
   sitemapFound?: boolean;

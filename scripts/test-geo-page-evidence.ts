@@ -20,6 +20,14 @@ const evidencedSite = auditSite({
       "FanCrafti makes handmade resin LED lamps for bedroom desks, gamer rooms, collectors, and gift buyers.",
     landingPageText:
       "Pick any 3 handmade resin lamps and save big. Perfect gift for anime fans, gamers, bedroom decor, and collector desks.",
+    homepageTitle: "FanCrafti Handmade Resin LED Lamps",
+    landingPageTitle: "TikTok Favorites - FanCrafti",
+    homepageMetaDescription: "Handmade resin LED lamps for gifts, bedrooms, gaming rooms, and collector desks.",
+    landingPageMetaDescription: "Pick any 3 handmade resin lamps and save on FanCrafti TikTok favorites.",
+    homepageCanonical: "https://fancrafti.com/",
+    landingPageCanonical: "https://fancrafti.com/tiktok/",
+    homepageInternalLinkCount: 12,
+    landingPageInternalLinkCount: 6,
     policyText:
       "Shipping is available worldwide. Returns are accepted within 30 days. Contact support for damaged items.",
     llmsTxtFound: true,
@@ -45,7 +53,13 @@ assert.ok(evidencedSite.checks.every((check) => typeof check.evidence === "strin
 assert.equal(evidencedSite.checks.find((check) => check.id === "commercial-intent")?.status, "pass");
 assert.equal(evidencedSite.checks.find((check) => check.id === "informational-intent")?.status, "pass");
 assert.equal(evidencedSite.checks.find((check) => check.id === "long-tail-intent")?.status, "pass");
+assert.equal(evidencedSite.checks.find((check) => check.id === "seo-title-description")?.status, "pass");
+assert.equal(evidencedSite.checks.find((check) => check.id === "canonical-url")?.status, "pass");
+assert.equal(evidencedSite.checks.find((check) => check.id === "internal-link-entry")?.status, "pass");
+assert.equal(evidencedSite.checks.find((check) => check.id === "external-search-data")?.status, "warn");
 assert.ok(weakSite.actionItems?.some((item) => item.id === "commercial-intent" || item.id === "long-tail-intent"));
+assert.equal(weakSite.checks.find((check) => check.id === "seo-title-description")?.status, "fail");
+assert.equal(weakSite.checks.find((check) => check.id === "internal-link-entry")?.status, "fail");
 
 const productWithoutSchema = auditProduct({
   title: "FanCrafti Ocean Resin Lamp",
