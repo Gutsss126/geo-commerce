@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
-import { formatGeoScoreGap, getGeoOptimizationPlan } from "@/lib/geo/display";
+import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan } from "@/lib/geo/display";
 import type { GeoActionItem, GeoAuditReport, GeoAuditSection, GeoCheckResult, GeoEvidenceItem } from "@/lib/geo/types";
 
 function parseReport(report: string): GeoAuditReport | null {
@@ -70,7 +70,19 @@ function SectionCard({ section }: { section: GeoAuditSection }) {
   );
 }
 
-function OptimizationPlanPanel({ plan }: { plan: NonNullable<ReturnType<typeof getGeoOptimizationPlan>> }) {
+function OptimizationPlanPanel({
+  checkId,
+  domain,
+  plan,
+  siteId,
+}: {
+  checkId: string;
+  domain?: string | null;
+  plan: NonNullable<ReturnType<typeof getGeoOptimizationPlan>>;
+  siteId?: string;
+}) {
+  const workflow = getGeoFixWorkflow({ id: checkId }, domain);
+
   return (
     <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
       <p className="font-medium text-blue-200">{plan.title}</p>
@@ -100,6 +112,40 @@ function OptimizationPlanPanel({ plan }: { plan: NonNullable<ReturnType<typeof g
           ))}
         </ul>
       </div>
+      <div className="mt-4 rounded border border-[var(--border)] p-3">
+        <p className="text-sm font-medium text-slate-200">执行状态</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {workflow.statuses.map((status) => (
+            <span key={status} className="rounded border border-slate-600/60 px-2 py-1 text-xs text-slate-300">
+              {status}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-slate-500">{workflow.reviewHint}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {workflow.actions.map((action) =>
+            action.kind === "audit" && siteId ? (
+              <form key={action.label} action={runSiteAudit.bind(null, siteId)}>
+                <button
+                  type="submit"
+                  className="rounded border border-blue-500/40 px-3 py-1.5 text-xs font-medium text-blue-200 hover:bg-blue-500/10"
+                >
+                  {action.label}
+                </button>
+              </form>
+            ) : action.href ? (
+              <Link
+                key={action.label}
+                href={action.href}
+                target={action.external ? "_blank" : undefined}
+                className="rounded border border-slate-600/70 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800"
+              >
+                {action.label}
+              </Link>
+            ) : null
+          )}
+        </div>
+      </div>
       {plan.template && (
         <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
           <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制模板</summary>
@@ -116,7 +162,7 @@ function OptimizationPlanPanel({ plan }: { plan: NonNullable<ReturnType<typeof g
   );
 }
 
-function CheckRow({ item }: { item: GeoCheckResult }) {
+function CheckRow({ domain, item, siteId }: { domain?: string | null; item: GeoCheckResult; siteId?: string }) {
   const scoreGap = formatGeoScoreGap(item);
   const optimizationPlan = getGeoOptimizationPlan(item);
 
@@ -143,14 +189,14 @@ function CheckRow({ item }: { item: GeoCheckResult }) {
         <p className="mt-2 text-xs text-slate-500">建议：{item.recommendation}</p>
 
         {optimizationPlan && (
-          <OptimizationPlanPanel plan={optimizationPlan} />
+          <OptimizationPlanPanel checkId={item.id} domain={domain} plan={optimizationPlan} siteId={siteId} />
         )}
       </div>
     </details>
   );
 }
 
-function ActionItemRow({ item }: { item: GeoActionItem }) {
+function ActionItemRow({ domain, item, siteId }: { domain?: string | null; item: GeoActionItem; siteId?: string }) {
   const optimizationPlan = getGeoOptimizationPlan({ id: item.id });
 
   return (
@@ -169,7 +215,7 @@ function ActionItemRow({ item }: { item: GeoActionItem }) {
       <div className="mt-4 border-t border-[var(--border)] pt-4">
         <p className="text-sm text-slate-300">{item.fix}</p>
         <p className="mt-2 text-xs text-slate-500">验证：{item.validation}</p>
-        {optimizationPlan && <OptimizationPlanPanel plan={optimizationPlan} />}
+        {optimizationPlan && <OptimizationPlanPanel checkId={item.id} domain={domain} plan={optimizationPlan} siteId={siteId} />}
       </div>
     </details>
   );
@@ -282,7 +328,7 @@ export default async function GeoAuditV2Page() {
           <CardDescription>每一项都展示证据、得分和下一步动作，方便运营逐条核对。</CardDescription>
           <div className="mt-4 space-y-3">
             {checks.map((item) => (
-              <CheckRow key={item.id} item={item} />
+              <CheckRow key={item.id} domain={primarySite?.domain} item={item} siteId={primarySite?.id} />
             ))}
           </div>
         </Card>
@@ -305,7 +351,7 @@ export default async function GeoAuditV2Page() {
         <CardDescription>只展示最该先做的 3 个问题，避免把运营拖进一长串技术清单。</CardDescription>
         <div className="mt-4 space-y-3">
           {topActions.map((item) => (
-            <ActionItemRow key={item.id} item={item} />
+            <ActionItemRow key={item.id} domain={primarySite?.domain} item={item} siteId={primarySite?.id} />
           ))}
           {topActions.length === 0 && (
             <p className="py-8 text-center text-sm text-slate-500">

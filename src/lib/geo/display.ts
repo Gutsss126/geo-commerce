@@ -17,6 +17,95 @@ export type GeoOptimizationPlan = {
   code?: string;
 };
 
+export type GeoFixWorkflowAction = {
+  kind: "audit" | "link";
+  label: string;
+  helper: string;
+  href?: string;
+  external?: boolean;
+};
+
+export type GeoFixWorkflow = {
+  statuses: ["未开始", "处理中", "已完成，待复查"];
+  reviewHint: string;
+  actions: GeoFixWorkflowAction[];
+};
+
+function normalizeDomain(domain?: string | null) {
+  return (domain || "fancrafti.com").replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+export function getGeoFixWorkflow(check: Pick<GeoCheckResult, "id">, domain?: string | null): GeoFixWorkflow {
+  const siteDomain = normalizeDomain(domain);
+  const baseActions: GeoFixWorkflowAction[] = [
+    {
+      kind: "audit",
+      label: "重新运行 GEO Audit",
+      helper: "修改发布后复查证据和分数是否变化。",
+    },
+  ];
+
+  const workflows: Record<string, Omit<GeoFixWorkflow, "statuses">> = {
+    "measurement-readiness": {
+      reviewHint: "完成事件代码后，先看 GA4 诊断页是否出现实时事件，再重新运行 GEO Audit。",
+      actions: [
+        {
+          kind: "link",
+          label: "查看 GA4 诊断",
+          helper: "确认 page_view、点击、加购和结账事件是否进入面板。",
+          href: "/diagnostics/ga4",
+        },
+        ...baseActions,
+      ],
+    },
+    "llms-txt": {
+      reviewHint: "发布 llms.txt 后，先确认文件可打开，再重新运行 GEO Audit。",
+      actions: [
+        {
+          kind: "link",
+          label: "打开 llms.txt",
+          helper: "确认站点根目录文件已经发布。",
+          href: `https://${siteDomain}/llms.txt`,
+          external: true,
+        },
+        ...baseActions,
+      ],
+    },
+    "product-schema-readiness": {
+      reviewHint: "发布 Schema 后，先检查商品页源码或结构化数据测试，再重新运行 GEO Audit。",
+      actions: [
+        {
+          kind: "link",
+          label: "打开首页检查",
+          helper: "从首页进入重点商品页，确认商品页已更新。",
+          href: `https://${siteDomain}/`,
+          external: true,
+        },
+        ...baseActions,
+      ],
+    },
+  };
+
+  const fallback: Omit<GeoFixWorkflow, "statuses"> = {
+    reviewHint: "完成页面内容修改后，重新运行 GEO Audit，确认证据、缺口和分数是否变化。",
+    actions: [
+      {
+        kind: "link",
+        label: "打开落地页",
+        helper: "确认用户看到的页面已经发布新内容。",
+        href: `https://${siteDomain}/tiktok/`,
+        external: true,
+      },
+      ...baseActions,
+    ],
+  };
+
+  return {
+    statuses: ["未开始", "处理中", "已完成，待复查"],
+    ...(workflows[check.id] ?? fallback),
+  };
+}
+
 export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOptimizationPlan | null {
   const plans: Record<string, GeoOptimizationPlan> = {
     "brand-entity": {

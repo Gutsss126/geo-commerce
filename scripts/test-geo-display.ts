@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { formatGeoScoreGap, getGeoOptimizationPlan } from "../src/lib/geo/display";
+import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan } from "../src/lib/geo/display";
 
 assert.equal(
   formatGeoScoreGap({
@@ -65,5 +65,16 @@ assert.ok(getGeoOptimizationPlan({ id: "title-clarity" })?.template?.includes("H
 assert.ok(getGeoOptimizationPlan({ id: "price-trust" })?.template?.includes("Shipping"));
 
 assert.equal(getGeoOptimizationPlan({ id: "unknown-check" }), null);
+
+const ga4Workflow = getGeoFixWorkflow({ id: "measurement-readiness" }, "fancrafti.com");
+assert.deepEqual(ga4Workflow.statuses, ["未开始", "处理中", "已完成，待复查"]);
+assert.ok(ga4Workflow.actions.some((action) => action.href === "/diagnostics/ga4"));
+assert.ok(ga4Workflow.actions.some((action) => action.kind === "audit"));
+
+const llmsWorkflow = getGeoFixWorkflow({ id: "llms-txt" }, "fancrafti.com");
+assert.ok(llmsWorkflow.actions.some((action) => action.href === "https://fancrafti.com/llms.txt"));
+
+const contentWorkflow = getGeoFixWorkflow({ id: "audience-fit" }, "fancrafti.com");
+assert.ok(contentWorkflow.reviewHint.includes("重新运行 GEO Audit"));
 
 console.log("GEO display tests passed");
