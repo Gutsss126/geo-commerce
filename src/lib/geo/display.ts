@@ -9,30 +9,149 @@ export function formatGeoScoreGap(check: Pick<GeoCheckResult, "score" | "maxScor
 export type GeoOptimizationPlan = {
   title: string;
   summary: string;
-  events: Array<{ name: string; purpose: string; placement: string }>;
+  why: string;
   steps: string[];
-  code: string;
+  validation: string[];
+  template?: string;
+  events?: Array<{ name: string; purpose: string; placement: string }>;
+  code?: string;
 };
 
 export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOptimizationPlan | null {
-  if (check.id !== "measurement-readiness") return null;
-
-  return {
-    title: "GA4 事件优化方案",
-    summary: "把 GEO 建议和用户行为接起来，先追踪落地页核心点击，再扩展到加购和结账。",
-    events: [
-      { name: "page_view", purpose: "确认页面被访问", placement: "/tiktok/ 页面加载后自动触发" },
-      { name: "shop_bundle_click", purpose: "确认主按钮是否吸引点击", placement: "Shop Bundle 按钮" },
-      { name: "top_sellers_click", purpose: "确认用户是否继续浏览商品", placement: "See Top Sellers 按钮" },
-      { name: "add_to_cart", purpose: "确认商品页是否产生购买意图", placement: "商品页加购按钮" },
-      { name: "checkout_click", purpose: "确认购物车是否进入结账", placement: "购物车或 Checkout 按钮" },
-    ],
-    steps: [
-      "先在 /tiktok/ 页面确认 page_view、shop_bundle_click、top_sellers_click 能进入 GA4 实时报告。",
-      "再把 add_to_cart 和 checkout_click 接到 WooCommerce 商品页和购物车按钮。",
-      "修改 GEO 内容后，对比 24-72 小时内点击、加购和结账事件是否提升。",
-    ],
-    code: `<script>
+  const plans: Record<string, GeoOptimizationPlan> = {
+    "audience-fit": {
+      title: "目标用户和场景优化方案",
+      summary: "把抽象卖点改成具体使用场景，让 AI 能判断应该推荐给谁。",
+      why: "AI 推荐时需要把商品匹配到具体需求，例如送礼、卧室桌面、游戏房、收藏展示。只写好看或独特不够。",
+      steps: [
+        "在首页首屏加入 1 句目标用户说明。",
+        "在 /tiktok/ 落地页加入 3 个使用场景标签。",
+        "在 Top 商品描述里重复这些场景词，但不要堆关键词。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认目标用户和场景分数提升。",
+        "用 GA4 查看 /tiktok/ 的停留和点击是否改善。",
+      ],
+      template:
+        "适合送给 anime fans、gamers、collector desk owners，也适合 bedroom desk、gaming room 和 cozy home decor 场景。",
+    },
+    "policy-clarity": {
+      title: "配送/退货/信任信息优化方案",
+      summary: "把购买前最担心的问题放到 AI 和用户都能读到的位置。",
+      why: "如果配送、退货、联系和安全支付不清晰，AI 很难把站点判断为可信购买结果。",
+      steps: [
+        "确认站点有 Shipping、Returns、Contact、About 页面。",
+        "在商品页或落地页底部加入简短的配送和退货摘要。",
+        "把客服邮箱、损坏处理、退款周期写成明确句子。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认配送/退货/信任信息不再是高优先级问题。",
+        "检查 GA4 中从落地页到商品页的继续浏览是否提升。",
+      ],
+      template:
+        "Shipping: Orders are processed within 3-7 business days. Returns: Contact us within 30 days if your item arrives damaged or incorrect. Support: support@example.com.",
+    },
+    "llms-txt": {
+      title: "llms.txt 与 AI 爬虫说明优化方案",
+      summary: "给 AI 爬虫一份简洁站点说明，告诉它哪些页面最重要。",
+      why: "llms.txt 不能保证被所有 AI 使用，但它是低成本的站点说明文件，能让核心页面、品牌、产品目录更容易被理解。",
+      steps: [
+        "在站点根目录创建 /llms.txt。",
+        "写清品牌、主站、产品目录、核心落地页和联系方式。",
+        "发布后用浏览器打开 https://你的域名/llms.txt 确认可访问。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认 llms.txt 检测通过。",
+        "确认 robots.txt 和 sitemap.xml 也能访问。",
+      ],
+      template:
+        "# FanCrafti\n\nFanCrafti sells handmade resin LED lamps for gifts, bedroom desks, gaming rooms, and collectors.\n\nImportant pages:\n- https://fancrafti.com/\n- https://fancrafti.com/tiktok/\n- https://fancrafti.com/shop/\n\nContact: support@fancrafti.com",
+    },
+    "product-schema-readiness": {
+      title: "Product Schema 优化方案",
+      summary: "让商品页具备机器可读的名称、图片、价格、库存和链接。",
+      why: "Product Schema 是搜索系统和 AI 理解商品实体的重要信号，尤其影响价格、库存、评价和可购买性判断。",
+      steps: [
+        "确认商品页输出 Product JSON-LD。",
+        "至少包含 name、image、description、offers.price、availability、url。",
+        "如果有评价，加入 aggregateRating 或 review。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认 Product Schema 准备度提升。",
+        "用 Google Rich Results Test 或页面源码确认 JSON-LD 存在。",
+      ],
+      template:
+        '{\n  "@context": "https://schema.org",\n  "@type": "Product",\n  "name": "FanCrafti Handmade Resin LED Lamp",\n  "image": "https://fancrafti.com/path-to-image.jpg",\n  "description": "Handmade resin LED lamp for bedroom desks and gifts.",\n  "offers": {\n    "@type": "Offer",\n    "priceCurrency": "USD",\n    "price": "39.99",\n    "availability": "https://schema.org/InStock",\n    "url": "https://fancrafti.com/products/example"\n  }\n}',
+    },
+    "qa-structure": {
+      title: "购买疑问 FAQ 优化方案",
+      summary: "把用户买之前会问的问题直接写出来，降低 AI 摘要的不确定性。",
+      why: "FAQ 能帮助 AI 回答配送、材质、尺寸、是否适合送礼等具体问题，也能减少用户犹豫。",
+      steps: [
+        "在落地页或商品页加入 3-5 个 FAQ。",
+        "优先覆盖是否手工、尺寸、供电方式、配送、退货、是否适合送礼。",
+        "问题和答案都用自然语言，不要只堆关键词。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认购买疑问覆盖提升。",
+        "观察 GA4 user_engagement 和商品点击是否改善。",
+      ],
+      template:
+        "Q: Is each lamp handmade?\nA: Yes. Each resin lamp is handmade, so small pattern differences are normal.\n\nQ: Is it suitable as a gift?\nA: Yes. It is designed for bedroom desks, gaming rooms, collectors, and handmade gift buyers.",
+    },
+    "comparison-intent": {
+      title: "对比与替代意图优化方案",
+      summary: "说明为什么买这个，而不是普通灯或其他装饰品。",
+      why: "AI 推荐通常发生在比较场景里。没有差异化描述时，页面很难成为推荐答案。",
+      steps: [
+        "在商品页加入一段 Compared with ordinary lamps 的说明。",
+        "突出 handmade、unique resin pattern、gift-ready、desk decor 等差异。",
+        "避免攻击竞品，只讲选择理由。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认对比与替代意图提升。",
+        "观察商品页点击和加购是否改善。",
+      ],
+      template:
+        "Compared with ordinary desk lamps, each FanCrafti resin lamp is handmade with a unique glowing scene, making it both a functional light and a collectible desk decor piece.",
+    },
+    "buyer-proof": {
+      title: "信任证据优化方案",
+      summary: "补充能证明商品真实可信的评价、制作过程和品牌信息。",
+      why: "AI 和用户都需要可信信号。没有评价、实拍、制作过程或品牌故事时，推荐风险会更高。",
+      steps: [
+        "在商品页加入买家评价或真实使用场景。",
+        "补充 handmade 制作过程、实拍图或工作室介绍。",
+        "如果有评分，尽量用结构化数据输出 aggregateRating。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认信任证据提升。",
+        "观察 add_to_cart 和 checkout_click 是否改善。",
+      ],
+      template:
+        "Each lamp is handmade by the FanCrafti studio. Product photos show real lighting effects, and customer feedback is used to improve packaging, brightness, and desk display experience.",
+    },
+    "measurement-readiness": {
+      title: "GA4 事件优化方案",
+      summary: "把 GEO 建议和用户行为接起来，先追踪落地页核心点击，再扩展到加购和结账。",
+      why: "GEO 优化不是只看分数，还要确认修改后用户是否真的点击、加购或结账。",
+      events: [
+        { name: "page_view", purpose: "确认页面被访问", placement: "/tiktok/ 页面加载后自动触发" },
+        { name: "shop_bundle_click", purpose: "确认主按钮是否吸引点击", placement: "Shop Bundle 按钮" },
+        { name: "top_sellers_click", purpose: "确认用户是否继续浏览商品", placement: "See Top Sellers 按钮" },
+        { name: "add_to_cart", purpose: "确认商品页是否产生购买意图", placement: "商品页加购按钮" },
+        { name: "checkout_click", purpose: "确认购物车是否进入结账", placement: "购物车或 Checkout 按钮" },
+      ],
+      steps: [
+        "先在 /tiktok/ 页面确认 page_view、shop_bundle_click、top_sellers_click 能进入 GA4 实时报告。",
+        "再把 add_to_cart 和 checkout_click 接到 WooCommerce 商品页和购物车按钮。",
+        "修改 GEO 内容后，对比 24-72 小时内点击、加购和结账事件是否提升。",
+      ],
+      validation: [
+        "打开 GA4 实时概览，确认事件能出现。",
+        "回到 GEO 的 GA4 诊断页面，确认实时反馈和事件分析有数据。",
+      ],
+      code: `<script>
   window.fancraftiTrack = function(eventName, params) {
     if (typeof window.gtag !== "function") return;
     window.gtag("event", eventName, {
@@ -65,5 +184,8 @@ export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOp
     }
   });
 </script>`,
+    },
   };
+
+  return plans[check.id] ?? null;
 }

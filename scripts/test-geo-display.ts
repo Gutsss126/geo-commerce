@@ -24,14 +24,26 @@ const ga4Plan = getGeoOptimizationPlan({
 });
 
 assert.equal(ga4Plan?.title, "GA4 事件优化方案");
-assert.ok(ga4Plan?.events.some((event) => event.name === "shop_bundle_click"));
-assert.ok(ga4Plan?.code.includes("shop_bundle_click"));
+assert.ok(ga4Plan?.events?.some((event) => event.name === "shop_bundle_click"));
+assert.ok(ga4Plan?.code?.includes("shop_bundle_click"));
 
-assert.equal(
-  getGeoOptimizationPlan({
-    id: "brand-entity",
-  }),
-  null
-);
+const audiencePlan = getGeoOptimizationPlan({ id: "audience-fit" });
+assert.equal(audiencePlan?.title, "目标用户和场景优化方案");
+assert.ok(audiencePlan?.template?.includes("适合"));
+assert.ok(audiencePlan?.validation.some((item) => item.includes("重新运行 GEO Audit")));
+
+const policyPlan = getGeoOptimizationPlan({ id: "policy-clarity" });
+assert.equal(policyPlan?.title, "配送/退货/信任信息优化方案");
+assert.ok(policyPlan?.steps.some((step) => step.includes("Shipping")));
+
+const llmsPlan = getGeoOptimizationPlan({ id: "llms-txt" });
+assert.equal(llmsPlan?.title, "llms.txt 与 AI 爬虫说明优化方案");
+assert.ok(llmsPlan?.template?.includes("# FanCrafti"));
+
+const productSchemaPlan = getGeoOptimizationPlan({ id: "product-schema-readiness" });
+assert.equal(productSchemaPlan?.title, "Product Schema 优化方案");
+assert.ok(productSchemaPlan?.template?.includes('"@type": "Product"'));
+
+assert.equal(getGeoOptimizationPlan({ id: "unknown-check" }), null);
 
 console.log("GEO display tests passed");

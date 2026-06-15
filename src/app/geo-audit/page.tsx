@@ -100,24 +100,43 @@ function CheckRow({ item }: { item: GeoCheckResult }) {
           <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
             <p className="font-medium text-blue-200">{optimizationPlan.title}</p>
             <p className="mt-1 text-sm text-slate-400">{optimizationPlan.summary}</p>
-            <div className="mt-4 grid gap-2 md:grid-cols-2">
-              {optimizationPlan.events.map((event) => (
-                <div key={event.name} className="rounded border border-[var(--border)] p-3">
-                  <p className="font-mono text-sm text-blue-200">{event.name}</p>
-                  <p className="mt-1 text-xs text-slate-400">{event.purpose}</p>
-                  <p className="mt-1 text-xs text-slate-500">位置：{event.placement}</p>
-                </div>
-              ))}
-            </div>
+            <p className="mt-3 text-sm text-slate-300">为什么重要：{optimizationPlan.why}</p>
+            {optimizationPlan.events && (
+              <div className="mt-4 grid gap-2 md:grid-cols-2">
+                {optimizationPlan.events.map((event) => (
+                  <div key={event.name} className="rounded border border-[var(--border)] p-3">
+                    <p className="font-mono text-sm text-blue-200">{event.name}</p>
+                    <p className="mt-1 text-xs text-slate-400">{event.purpose}</p>
+                    <p className="mt-1 text-xs text-slate-500">位置：{event.placement}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             <ol className="mt-4 space-y-2 text-sm text-slate-300">
               {optimizationPlan.steps.map((step, index) => (
                 <li key={step}>{index + 1}. {step}</li>
               ))}
             </ol>
-            <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
-              <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制代码</summary>
-              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{optimizationPlan.code}</pre>
-            </details>
+            <div className="mt-4 rounded border border-[var(--border)] p-3">
+              <p className="text-sm font-medium text-slate-200">验证方式</p>
+              <ul className="mt-2 space-y-1 text-xs text-slate-400">
+                {optimizationPlan.validation.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            </div>
+            {optimizationPlan.template && (
+              <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+                <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制模板</summary>
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{optimizationPlan.template}</pre>
+              </details>
+            )}
+            {optimizationPlan.code && (
+              <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+                <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制代码</summary>
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{optimizationPlan.code}</pre>
+              </details>
+            )}
           </div>
         )}
       </div>
