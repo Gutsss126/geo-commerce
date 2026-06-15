@@ -44,6 +44,26 @@ const productSchemaPlan = getGeoOptimizationPlan({ id: "product-schema-readiness
 assert.equal(productSchemaPlan?.title, "Product Schema 优化方案");
 assert.ok(productSchemaPlan?.template?.includes('"@type": "Product"'));
 
+const requiredPlanIds = [
+  "brand-entity",
+  "offer-clarity",
+  "catalog-coverage",
+  "title-clarity",
+  "taxonomy",
+  "factual-density",
+  "price-trust",
+];
+
+for (const id of requiredPlanIds) {
+  const plan = getGeoOptimizationPlan({ id });
+  assert.ok(plan, `${id} should have a fix plan`);
+  assert.ok(plan.steps.length >= 2, `${id} should include concrete steps`);
+  assert.ok(plan.validation.length >= 1, `${id} should include validation guidance`);
+}
+
+assert.ok(getGeoOptimizationPlan({ id: "title-clarity" })?.template?.includes("Handmade"));
+assert.ok(getGeoOptimizationPlan({ id: "price-trust" })?.template?.includes("Shipping"));
+
 assert.equal(getGeoOptimizationPlan({ id: "unknown-check" }), null);
 
 console.log("GEO display tests passed");

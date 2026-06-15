@@ -70,6 +70,52 @@ function SectionCard({ section }: { section: GeoAuditSection }) {
   );
 }
 
+function OptimizationPlanPanel({ plan }: { plan: NonNullable<ReturnType<typeof getGeoOptimizationPlan>> }) {
+  return (
+    <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+      <p className="font-medium text-blue-200">{plan.title}</p>
+      <p className="mt-1 text-sm text-slate-400">{plan.summary}</p>
+      <p className="mt-3 text-sm text-slate-300">为什么重要：{plan.why}</p>
+      {plan.events && (
+        <div className="mt-4 grid gap-2 md:grid-cols-2">
+          {plan.events.map((event) => (
+            <div key={event.name} className="rounded border border-[var(--border)] p-3">
+              <p className="font-mono text-sm text-blue-200">{event.name}</p>
+              <p className="mt-1 text-xs text-slate-400">{event.purpose}</p>
+              <p className="mt-1 text-xs text-slate-500">位置：{event.placement}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <ol className="mt-4 space-y-2 text-sm text-slate-300">
+        {plan.steps.map((step, index) => (
+          <li key={step}>{index + 1}. {step}</li>
+        ))}
+      </ol>
+      <div className="mt-4 rounded border border-[var(--border)] p-3">
+        <p className="text-sm font-medium text-slate-200">验证方式</p>
+        <ul className="mt-2 space-y-1 text-xs text-slate-400">
+          {plan.validation.map((item) => (
+            <li key={item}>• {item}</li>
+          ))}
+        </ul>
+      </div>
+      {plan.template && (
+        <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制模板</summary>
+          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{plan.template}</pre>
+        </details>
+      )}
+      {plan.code && (
+        <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制代码</summary>
+          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{plan.code}</pre>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function CheckRow({ item }: { item: GeoCheckResult }) {
   const scoreGap = formatGeoScoreGap(item);
   const optimizationPlan = getGeoOptimizationPlan(item);
@@ -97,48 +143,33 @@ function CheckRow({ item }: { item: GeoCheckResult }) {
         <p className="mt-2 text-xs text-slate-500">建议：{item.recommendation}</p>
 
         {optimizationPlan && (
-          <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
-            <p className="font-medium text-blue-200">{optimizationPlan.title}</p>
-            <p className="mt-1 text-sm text-slate-400">{optimizationPlan.summary}</p>
-            <p className="mt-3 text-sm text-slate-300">为什么重要：{optimizationPlan.why}</p>
-            {optimizationPlan.events && (
-              <div className="mt-4 grid gap-2 md:grid-cols-2">
-                {optimizationPlan.events.map((event) => (
-                  <div key={event.name} className="rounded border border-[var(--border)] p-3">
-                    <p className="font-mono text-sm text-blue-200">{event.name}</p>
-                    <p className="mt-1 text-xs text-slate-400">{event.purpose}</p>
-                    <p className="mt-1 text-xs text-slate-500">位置：{event.placement}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            <ol className="mt-4 space-y-2 text-sm text-slate-300">
-              {optimizationPlan.steps.map((step, index) => (
-                <li key={step}>{index + 1}. {step}</li>
-              ))}
-            </ol>
-            <div className="mt-4 rounded border border-[var(--border)] p-3">
-              <p className="text-sm font-medium text-slate-200">验证方式</p>
-              <ul className="mt-2 space-y-1 text-xs text-slate-400">
-                {optimizationPlan.validation.map((item) => (
-                  <li key={item}>• {item}</li>
-                ))}
-              </ul>
-            </div>
-            {optimizationPlan.template && (
-              <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
-                <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制模板</summary>
-                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{optimizationPlan.template}</pre>
-              </details>
-            )}
-            {optimizationPlan.code && (
-              <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
-                <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制代码</summary>
-                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{optimizationPlan.code}</pre>
-              </details>
-            )}
-          </div>
+          <OptimizationPlanPanel plan={optimizationPlan} />
         )}
+      </div>
+    </details>
+  );
+}
+
+function ActionItemRow({ item }: { item: GeoActionItem }) {
+  const optimizationPlan = getGeoOptimizationPlan({ id: item.id });
+
+  return (
+    <details className="group rounded-lg border border-[var(--border)] p-4">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-medium">{item.title}</p>
+          <p className="mt-1 text-xs text-slate-500">{item.target}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <PriorityPill priority={item.priority} />
+          <span className="text-xs text-slate-500 group-open:hidden">展开方案</span>
+          <span className="hidden text-xs text-slate-500 group-open:inline">收起</span>
+        </div>
+      </summary>
+      <div className="mt-4 border-t border-[var(--border)] pt-4">
+        <p className="text-sm text-slate-300">{item.fix}</p>
+        <p className="mt-2 text-xs text-slate-500">验证：{item.validation}</p>
+        {optimizationPlan && <OptimizationPlanPanel plan={optimizationPlan} />}
       </div>
     </details>
   );
@@ -274,17 +305,7 @@ export default async function GeoAuditV2Page() {
         <CardDescription>只展示最该先做的 3 个问题，避免把运营拖进一长串技术清单。</CardDescription>
         <div className="mt-4 space-y-3">
           {topActions.map((item) => (
-            <div key={item.id} className="rounded-lg border border-[var(--border)] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">{item.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{item.target}</p>
-                </div>
-                <PriorityPill priority={item.priority} />
-              </div>
-              <p className="mt-3 text-sm text-slate-300">{item.fix}</p>
-              <p className="mt-2 text-xs text-slate-500">验证：{item.validation}</p>
-            </div>
+            <ActionItemRow key={item.id} item={item} />
           ))}
           {topActions.length === 0 && (
             <p className="py-8 text-center text-sm text-slate-500">

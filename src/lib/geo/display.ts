@@ -19,6 +19,38 @@ export type GeoOptimizationPlan = {
 
 export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOptimizationPlan | null {
   const plans: Record<string, GeoOptimizationPlan> = {
+    "brand-entity": {
+      title: "品牌实体清晰度优化方案",
+      summary: "让品牌名、域名和站内介绍保持一致，方便 AI 把它识别为同一个实体。",
+      why: "AI 需要确认页面背后是谁、官网在哪里、是否和商品页/落地页属于同一个品牌。",
+      steps: [
+        "确认首页、页脚、About 页面使用同一个品牌名。",
+        "确认域名、社媒名称、客服邮箱的品牌拼写一致。",
+        "在首页或 About 页面加入一句简短品牌介绍。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认品牌实体清晰度提升。",
+        "检查首页、/tiktok/、About 页是否都能看到同一个品牌名。",
+      ],
+      template:
+        "FanCrafti is an independent studio creating handmade resin LED lamps for gifts, bedroom desks, gaming rooms, and collectors.",
+    },
+    "offer-clarity": {
+      title: "核心销售主张优化方案",
+      summary: "用一句话讲清楚卖什么、适合谁、为什么值得买。",
+      why: "如果首页和落地页只有氛围词，AI 很难把站点匹配到具体购买意图。",
+      steps: [
+        "在首页首屏加入一条清晰主张。",
+        "在 /tiktok/ 落地页重复同一核心主张，并突出当前活动。",
+        "避免只写 unique、beautiful 这类抽象词，补充品类和场景。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认核心销售主张分数提升。",
+        "检查 GA4 中主按钮点击是否改善。",
+      ],
+      template:
+        "Handmade resin LED lamps for anime fans, gamers, collectors, and cozy bedroom desks. Pick any 3 styles and save on your first bundle.",
+    },
     "audience-fit": {
       title: "目标用户和场景优化方案",
       summary: "把抽象卖点改成具体使用场景，让 AI 能判断应该推荐给谁。",
@@ -82,6 +114,86 @@ export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOp
       ],
       template:
         '{\n  "@context": "https://schema.org",\n  "@type": "Product",\n  "name": "FanCrafti Handmade Resin LED Lamp",\n  "image": "https://fancrafti.com/path-to-image.jpg",\n  "description": "Handmade resin LED lamp for bedroom desks and gifts.",\n  "offers": {\n    "@type": "Offer",\n    "priceCurrency": "USD",\n    "price": "39.99",\n    "availability": "https://schema.org/InStock",\n    "url": "https://fancrafti.com/products/example"\n  }\n}',
+    },
+    "catalog-coverage": {
+      title: "商品目录覆盖优化方案",
+      summary: "优先让 Top SKU 被同步、可访问、可解析，而不是一次性追求全站完美。",
+      why: "AI 需要足够商品实体和内部链接，才能理解你的产品范围并做推荐。",
+      steps: [
+        "优先同步并优化 Top 20 个最想推广的商品。",
+        "确保这些商品有标题、类目、价格、图片、URL 和描述。",
+        "在首页、/tiktok/、集合页里链接到这些重点商品。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认商品目录覆盖提升。",
+        "检查低分商品列表是否减少。",
+      ],
+      template:
+        "Top SKU checklist: title, category, price, product URL, main image, 120+ word description, Product Schema, FAQ, shipping/return note.",
+    },
+    "title-clarity": {
+      title: "商品标题优化方案",
+      summary: "让标题直接说清品牌、品类、核心卖点和使用场景。",
+      why: "商品标题是 AI 理解商品实体的第一入口，太短或太抽象会降低可推荐性。",
+      steps: [
+        "标题控制在 28-90 个字符左右。",
+        "包含品牌、品类、材质/风格、使用场景。",
+        "避免只写 Lamp、Gift、Cute 这类过短标题。",
+      ],
+      validation: [
+        "重新运行商品 GEO Audit，确认商品标题分数提升。",
+        "检查商品页标题在搜索结果和页面 H1 中一致。",
+      ],
+      template:
+        "FanCrafti Handmade Resin LED Ocean Lamp for Bedroom Desk Gift",
+    },
+    "taxonomy": {
+      title: "商品类目优化方案",
+      summary: "给商品设置清晰类目，帮助 AI 判断它属于哪类购买需求。",
+      why: "没有类目时，AI 只能依赖标题和描述猜测商品类型，容易把商品放错推荐场景。",
+      steps: [
+        "为每个商品设置稳定类目，例如 Handmade Resin LED Lamps。",
+        "集合页和面包屑中使用同一类目名称。",
+        "避免同类商品使用多个近似但不同的类目名。",
+      ],
+      validation: [
+        "重新运行商品 GEO Audit，确认商品类目分数提升。",
+        "检查低分商品中缺少类目的数量是否减少。",
+      ],
+      template:
+        "Recommended categories: Handmade Resin LED Lamps, Gift Lamps, Desk Decor, Gaming Room Decor, Anime Gifts.",
+    },
+    "factual-density": {
+      title: "商品事实密度优化方案",
+      summary: "补充材质、尺寸、供电、包装、适用场景等可验证事实。",
+      why: "AI 摘要更依赖事实而不是形容词。事实越清楚，越容易被准确引用和推荐。",
+      steps: [
+        "每个商品描述至少加入 5 个事实点。",
+        "覆盖材质、尺寸、供电方式、包装、适用场景、手工差异。",
+        "用短段落或列表展示，避免一整段堆满形容词。",
+      ],
+      validation: [
+        "重新运行商品 GEO Audit，确认商品事实密度提升。",
+        "检查页面证据里是否出现 resin、wood、USB、size、handmade 等词。",
+      ],
+      template:
+        "Material: resin and wood base. Power: USB LED light. Use: bedroom desk, gaming room, collector shelf. Note: each handmade resin pattern is unique.",
+    },
+    "price-trust": {
+      title: "价格与购买信号优化方案",
+      summary: "让价格、库存、配送和退货信息稳定出现在商品页。",
+      why: "AI 和用户都需要确认商品是否可购买，以及购买风险是否清楚。",
+      steps: [
+        "确认商品页显示价格、库存状态和购买按钮。",
+        "在价格附近加入简短 Shipping、Returns 或 Secure checkout 信息。",
+        "确保 Product Schema 中 offers.price 和 availability 正确。",
+      ],
+      validation: [
+        "重新运行商品 GEO Audit，确认价格与购买信号提升。",
+        "检查 GA4 add_to_cart 和 checkout_click 是否能被记录。",
+      ],
+      template:
+        "Price includes the handmade lamp only. Shipping is calculated at checkout. Returns are accepted within 30 days for damaged or incorrect items.",
     },
     "qa-structure": {
       title: "购买疑问 FAQ 优化方案",
