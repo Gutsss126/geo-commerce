@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
+import { formatGeoScoreGap } from "@/lib/geo/display";
 import type { GeoActionItem, GeoAuditReport, GeoAuditSection, GeoCheckResult, GeoEvidenceItem } from "@/lib/geo/types";
 
 function parseReport(report: string): GeoAuditReport | null {
@@ -177,6 +178,10 @@ export default async function GeoAuditV2Page() {
           <div className="mt-4 space-y-3">
             {checks.map((item) => (
               <div key={item.id} className="rounded-lg border border-[var(--border)] p-4">
+                {(() => {
+                  const scoreGap = formatGeoScoreGap(item);
+                  return (
+                    <>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{item.name}</p>
@@ -189,8 +194,12 @@ export default async function GeoAuditV2Page() {
                     <CheckStatusPill status={item.status} />
                   </div>
                 </div>
+                {scoreGap && <p className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">缺口：{scoreGap}</p>}
                 {item.evidence && <p className="mt-3 text-sm text-slate-300">证据：{item.evidence}</p>}
                 <p className="mt-2 text-xs text-slate-500">建议：{item.recommendation}</p>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
