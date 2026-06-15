@@ -85,11 +85,37 @@ function OptimizationPlanPanel({
 
   return (
     <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
-      <p className="font-medium text-blue-200">{plan.title}</p>
-      <p className="mt-1 text-sm text-slate-400">{plan.summary}</p>
-      <p className="mt-3 text-sm text-slate-300">为什么重要：{plan.why}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-medium text-blue-200">{plan.title}</p>
+          <p className="mt-1 text-sm text-slate-400">{plan.summary}</p>
+        </div>
+        <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">
+          执行包
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <div className="rounded border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-sm font-medium text-slate-200">为什么重要</p>
+          <p className="mt-2 text-xs leading-5 text-slate-400">{plan.why}</p>
+        </div>
+        <div className="rounded border border-[var(--border)] bg-slate-950/40 p-3 lg:col-span-2">
+          <p className="text-sm font-medium text-slate-200">怎么改</p>
+          <ol className="mt-2 space-y-1 text-xs leading-5 text-slate-400">
+            {plan.steps.map((step, index) => (
+              <li key={step}>
+                {index + 1}. {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
       {plan.events && (
-        <div className="mt-4 grid gap-2 md:grid-cols-2">
+        <div className="mt-4">
+          <p className="text-sm font-medium text-slate-200">需要追踪的动作</p>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">
           {plan.events.map((event) => (
             <div key={event.name} className="rounded border border-[var(--border)] p-3">
               <p className="font-mono text-sm text-blue-200">{event.name}</p>
@@ -97,21 +123,38 @@ function OptimizationPlanPanel({
               <p className="mt-1 text-xs text-slate-500">位置：{event.placement}</p>
             </div>
           ))}
+          </div>
         </div>
       )}
-      <ol className="mt-4 space-y-2 text-sm text-slate-300">
-        {plan.steps.map((step, index) => (
-          <li key={step}>{index + 1}. {step}</li>
-        ))}
-      </ol>
+
+      {(plan.template || plan.code) && (
+        <div className="mt-4 rounded border border-emerald-500/30 bg-emerald-500/5 p-3">
+          <p className="text-sm font-medium text-emerald-200">可复制内容</p>
+          <p className="mt-1 text-xs text-slate-500">给运营或建站后台直接使用，复制前按实际页面和商品微调。</p>
+          {plan.template && (
+            <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+              <summary className="cursor-pointer text-sm font-medium text-slate-200">文字模板</summary>
+              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{plan.template}</pre>
+            </details>
+          )}
+          {plan.code && (
+            <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+              <summary className="cursor-pointer text-sm font-medium text-slate-200">代码片段</summary>
+              <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{plan.code}</pre>
+            </details>
+          )}
+        </div>
+      )}
+
       <div className="mt-4 rounded border border-[var(--border)] p-3">
-        <p className="text-sm font-medium text-slate-200">验证方式</p>
+        <p className="text-sm font-medium text-slate-200">怎么复查</p>
         <ul className="mt-2 space-y-1 text-xs text-slate-400">
           {plan.validation.map((item) => (
             <li key={item}>• {item}</li>
           ))}
         </ul>
       </div>
+
       <div className="mt-4 rounded border border-[var(--border)] p-3">
         <p className="text-sm font-medium text-slate-200">执行状态</p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -146,18 +189,6 @@ function OptimizationPlanPanel({
           )}
         </div>
       </div>
-      {plan.template && (
-        <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制模板</summary>
-          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{plan.template}</pre>
-        </details>
-      )}
-      {plan.code && (
-        <details className="mt-4 rounded border border-[var(--border)] bg-slate-950/60 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-slate-200">查看可复制代码</summary>
-          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-xs text-slate-300">{plan.code}</pre>
-        </details>
-      )}
     </div>
   );
 }
@@ -218,6 +249,38 @@ function ActionItemRow({ domain, item, siteId }: { domain?: string | null; item:
         {optimizationPlan && <OptimizationPlanPanel checkId={item.id} domain={domain} plan={optimizationPlan} siteId={siteId} />}
       </div>
     </details>
+  );
+}
+
+function StrategyReadinessCard() {
+  const rows = [
+    {
+      title: "GEO 已覆盖",
+      body: "品牌实体、页面证据、商品机器可读性、FAQ/信任信息、llms.txt、GA4 行为验证闭环。",
+    },
+    {
+      title: "SEO 待增强",
+      body: "关键词机会、标题/描述重复、索引状态、内链深度、Core Web Vitals 与搜索排名变化还需要后续版本接入。",
+    },
+    {
+      title: "严谨原则",
+      body: "先看真实页面证据，再给分；先给最少的 3 个优先动作，再提供可复制执行包；最后用 GA4 复查效果。",
+    },
+  ];
+
+  return (
+    <Card>
+      <CardTitle>策略严谨度</CardTitle>
+      <CardDescription>当前版本先做 GEO 决策闭环，SEO 深度诊断会作为后续增强，不把分数包装成万能答案。</CardDescription>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        {rows.map((row) => (
+          <div key={row.title} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <p className="text-sm font-medium text-slate-200">{row.title}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-400">{row.body}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -300,6 +363,8 @@ export default async function GeoAuditV2Page() {
           </ol>
         </Card>
       </div>
+
+      <StrategyReadinessCard />
 
       {evidenceItems.length > 0 && (
         <Card>
