@@ -156,6 +156,54 @@ export function getGeoOptimizationPlan(check: Pick<GeoCheckResult, "id">): GeoOp
       template:
         "适合送给 anime fans、gamers、collector desk owners，也适合 bedroom desk、gaming room 和 cozy home decor 场景。",
     },
+    "commercial-intent": {
+      title: "商业意图优化方案",
+      summary: "让页面明确表达可购买、优惠、套装和下单路径。",
+      why: "AI 推荐和搜索匹配都需要判断页面是否满足购买意图。只有氛围描述而没有 shop、bundle、save、price 等信号，容易被判断为信息页而不是购买页。",
+      steps: [
+        "在首屏按钮和标题附近加入 Shop、Bundle、Save、Price 等购买信号。",
+        "把当前优惠或套装规则写清楚，例如 Pick Any 3 & Save。",
+        "让主按钮指向明确商品集合或购买路径。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认商业意图覆盖提升。",
+        "在 GA4 中观察 shop_bundle_click、top_sellers_click 和 add_to_cart 是否改善。",
+      ],
+      template:
+        "Shop the FanCrafti bundle: Pick any 3 handmade resin LED lamps and save on your first order.",
+    },
+    "informational-intent": {
+      title: "信息/FAQ 意图优化方案",
+      summary: "补充购买前问题，让页面既能卖，也能回答用户疑虑。",
+      why: "用户和 AI 都会问配送、退货、材质、尺寸、是否适合送礼等问题。页面能回答这些问题，才更容易被引用和推荐。",
+      steps: [
+        "在落地页或商品页加入简短 FAQ。",
+        "覆盖 shipping、returns、materials、gift suitability、size、power source。",
+        "把答案写成自然语言，不要只堆关键词。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认信息/FAQ 意图覆盖提升。",
+        "观察 GA4 user_engagement 和商品页点击是否改善。",
+      ],
+      template:
+        "FAQ: Is it suitable as a gift? Yes. Each handmade resin lamp is designed for anime fans, gamers, collectors, and bedroom desk decor. Shipping and returns are available.",
+    },
+    "long-tail-intent": {
+      title: "长尾场景意图优化方案",
+      summary: "把商品从泛泛的 lamp 拆成具体人群和场景。",
+      why: "AI 推荐更依赖具体上下文，例如 anime fan gift、gaming room decor、bedroom desk lamp。长尾场景越清晰，越容易匹配到真实买家。",
+      steps: [
+        "在首页、/tiktok/ 和 Top SKU 中加入 3-5 个场景短语。",
+        "优先覆盖 anime fan、gaming room、bedroom desk、collector shelf、gift buyer。",
+        "让这些场景出现在标题、副标题、商品卡片和 FAQ 中。",
+      ],
+      validation: [
+        "重新运行 GEO Audit，确认长尾场景意图提升。",
+        "观察 /tiktok/ 页面点击和商品页继续浏览是否改善。",
+      ],
+      template:
+        "Made for anime fan gifts, gaming room decor, bedroom desk lighting, collector shelves, and cozy handmade home decor.",
+    },
     "policy-clarity": {
       title: "配送/退货/信任信息优化方案",
       summary: "把购买前最担心的问题放到 AI 和用户都能读到的位置。",

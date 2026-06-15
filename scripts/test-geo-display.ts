@@ -52,6 +52,9 @@ const requiredPlanIds = [
   "taxonomy",
   "factual-density",
   "price-trust",
+  "commercial-intent",
+  "informational-intent",
+  "long-tail-intent",
 ];
 
 for (const id of requiredPlanIds) {
@@ -63,6 +66,9 @@ for (const id of requiredPlanIds) {
 
 assert.ok(getGeoOptimizationPlan({ id: "title-clarity" })?.template?.includes("Handmade"));
 assert.ok(getGeoOptimizationPlan({ id: "price-trust" })?.template?.includes("Shipping"));
+assert.ok(getGeoOptimizationPlan({ id: "commercial-intent" })?.template?.includes("Shop"));
+assert.ok(getGeoOptimizationPlan({ id: "informational-intent" })?.template?.includes("FAQ"));
+assert.ok(getGeoOptimizationPlan({ id: "long-tail-intent" })?.template?.includes("anime fan"));
 
 assert.equal(getGeoOptimizationPlan({ id: "unknown-check" }), null);
 

@@ -43,7 +43,7 @@ function buildSections(checks: GeoCheckResult[]): GeoAuditSection[] {
     {
       id: "site-understanding",
       title: "网站理解度",
-      checkIds: ["brand-entity", "offer-clarity", "audience-fit", "title-clarity", "taxonomy"],
+      checkIds: ["brand-entity", "offer-clarity", "audience-fit", "long-tail-intent", "title-clarity", "taxonomy"],
     },
     {
       id: "commerce-readability",
@@ -53,7 +53,7 @@ function buildSections(checks: GeoCheckResult[]): GeoAuditSection[] {
     {
       id: "ai-recommendation-readiness",
       title: "AI 推荐准备度",
-      checkIds: ["qa-structure", "comparison-intent", "buyer-proof", "policy-clarity"],
+      checkIds: ["commercial-intent", "informational-intent", "qa-structure", "comparison-intent", "buyer-proof", "policy-clarity"],
     },
     {
       id: "measurement-loop",
@@ -378,6 +378,75 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
       includesAny(siteText, ["gift", "desk", "bedroom", "fan", "gamer", "home", "collector", "anime"])
         ? previewEvidence(siteText, "页面中出现目标用户或使用场景")
         : "未发现 gift、desk、bedroom、fan、gamer、collector 等场景词"
+    )
+  );
+
+  const hasCommercialIntent = includesAny(siteText, [
+    "buy",
+    "shop",
+    "bundle",
+    "save",
+    "discount",
+    "sale",
+    "price",
+    "checkout",
+    "order",
+  ]);
+  checks.push(
+    check(
+      "commercial-intent",
+      "商业意图覆盖",
+      hasCommercialIntent ? 12 : 4,
+      12,
+      hasCommercialIntent ? "页面包含购买、优惠或下单意图信号" : "页面缺少明确购买意图信号",
+      "在落地页和核心商品区加入 shop、bundle、save、price、gift-ready 等商业意图表达，让 AI 能判断这是可购买页面。",
+      hasCommercialIntent ? previewEvidence(siteText, "页面中出现商业意图词") : "未发现 buy、shop、bundle、save、price、checkout 等商业意图词"
+    )
+  );
+
+  const hasInformationalIntent = includesAny(`${siteText}\n${policyText}`, [
+    "faq",
+    "how",
+    "what",
+    "shipping",
+    "return",
+    "refund",
+    "is it",
+    "does it",
+    "question",
+  ]);
+  checks.push(
+    check(
+      "informational-intent",
+      "信息/FAQ 意图覆盖",
+      hasInformationalIntent ? 10 : 4,
+      10,
+      hasInformationalIntent ? "页面能回答配送、退货或购买前问题" : "页面缺少信息型问题回答",
+      "补充 FAQ、配送、退货、材质、尺寸、是否适合送礼等问答，覆盖用户在购买前会问的问题。",
+      hasInformationalIntent ? previewEvidence(`${siteText}\n${policyText}`, "页面中出现信息型意图") : "未发现 FAQ、how、shipping、return、refund 等信息型意图词"
+    )
+  );
+
+  const hasLongTailIntent = includesAny(siteText, [
+    "bedroom desk",
+    "gaming room",
+    "anime fan",
+    "collector",
+    "gift buyer",
+    "desk decor",
+    "home decor",
+    "fandom",
+    "gamer",
+  ]);
+  checks.push(
+    check(
+      "long-tail-intent",
+      "长尾场景意图",
+      hasLongTailIntent ? 10 : 4,
+      10,
+      hasLongTailIntent ? "页面包含具体人群或场景长尾表达" : "页面缺少具体长尾场景表达",
+      "把抽象卖点拆成具体搜索/推荐场景，例如 anime fan gift、gaming room decor、bedroom desk lamp。",
+      hasLongTailIntent ? previewEvidence(siteText, "页面中出现长尾场景表达") : "未发现 bedroom desk、gaming room、anime fan、collector、desk decor 等长尾场景词"
     )
   );
 

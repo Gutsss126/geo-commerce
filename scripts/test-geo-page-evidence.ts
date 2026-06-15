@@ -42,6 +42,10 @@ assert.match(
   /Shipping|policy|shipping/i
 );
 assert.ok(evidencedSite.checks.every((check) => typeof check.evidence === "string" && check.evidence.length > 0));
+assert.equal(evidencedSite.checks.find((check) => check.id === "commercial-intent")?.status, "pass");
+assert.equal(evidencedSite.checks.find((check) => check.id === "informational-intent")?.status, "pass");
+assert.equal(evidencedSite.checks.find((check) => check.id === "long-tail-intent")?.status, "pass");
+assert.ok(weakSite.actionItems?.some((item) => item.id === "commercial-intent" || item.id === "long-tail-intent"));
 
 const productWithoutSchema = auditProduct({
   title: "FanCrafti Ocean Resin Lamp",
