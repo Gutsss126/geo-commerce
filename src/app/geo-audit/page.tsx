@@ -4,7 +4,13 @@ import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
-import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan, getGeoStrategyReadiness } from "@/lib/geo/display";
+import {
+  formatGeoAuditDelta,
+  formatGeoScoreGap,
+  getGeoFixWorkflow,
+  getGeoOptimizationPlan,
+  getGeoStrategyReadiness,
+} from "@/lib/geo/display";
 import type {
   GeoActionItem,
   GeoAuditReport,
@@ -404,11 +410,69 @@ function PageExperienceCard({ report }: { report?: PageExperienceReport }) {
   );
 }
 
+function AuditDeltaCard({
+  current,
+  previous,
+}: {
+  current: GeoAuditReport | null;
+  previous: GeoAuditReport | null;
+}) {
+  if (!current) return null;
+  const delta = formatGeoAuditDelta(current, previous);
+  const styles = {
+    new: "border-blue-500/30 bg-blue-500/5 text-blue-200",
+    improved: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    declined: "border-rose-500/30 bg-rose-500/5 text-rose-200",
+    flat: "border-slate-600/60 bg-slate-950/40 text-slate-200",
+  };
+  const label = {
+    new: "首次记录",
+    improved: "变好",
+    declined: "变差",
+    flat: "持平",
+  };
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>本次 vs 上次</CardTitle>
+          <CardDescription>只看最近两次站点审计，帮助判断修改是否真的带来变化。</CardDescription>
+        </div>
+        <span className={`rounded border px-2 py-1 text-xs font-medium ${styles[delta.status]}`}>
+          {label[delta.status]}
+        </span>
+      </div>
+      <p className="mt-4 text-sm text-slate-300">{delta.summary}</p>
+      {delta.status !== "new" && (
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-xs text-slate-500">总分变化</p>
+            <p className="mt-1 text-lg font-semibold text-slate-100">{delta.scoreDelta > 0 ? `+${delta.scoreDelta}` : delta.scoreDelta}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-xs text-slate-500">通过项</p>
+            <p className="mt-1 text-lg font-semibold text-emerald-300">{delta.passDelta > 0 ? `+${delta.passDelta}` : delta.passDelta}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-xs text-slate-500">待加强</p>
+            <p className="mt-1 text-lg font-semibold text-amber-300">{delta.warnDelta > 0 ? `+${delta.warnDelta}` : delta.warnDelta}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-xs text-slate-500">需处理</p>
+            <p className="mt-1 text-lg font-semibold text-rose-300">{delta.failDelta > 0 ? `+${delta.failDelta}` : delta.failDelta}</p>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
       _count: { select: { products: true, audits: true } },
-      audits: { orderBy: { createdAt: "desc" }, take: 1 },
+      audits: { where: { type: "site" }, orderBy: { createdAt: "desc" }, take: 2 },
       products: { orderBy: [{ geoScore: "asc" }, { updatedAt: "desc" }], take: 5 },
     },
     orderBy: { createdAt: "desc" },
@@ -416,7 +480,9 @@ export default async function GeoAuditV2Page() {
 
   const primarySite = sites[0] ?? null;
   const latestAudit = primarySite?.audits[0] ?? null;
+  const previousAudit = primarySite?.audits[1] ?? null;
   const report = latestAudit ? parseReport(latestAudit.report) : null;
+  const previousReport = previousAudit ? parseReport(previousAudit.report) : null;
   const sections = report?.sections ?? [];
   const actionItems = report?.actionItems ?? [];
   const evidenceItems = report?.evidenceItems ?? [];
@@ -484,6 +550,7 @@ export default async function GeoAuditV2Page() {
         </Card>
       </div>
 
+      <AuditDeltaCard current={report} previous={previousReport} />
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
       <PageExperienceCard report={report?.pageExperience} />

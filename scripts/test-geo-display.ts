@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   formatGeoScoreGap,
+  formatGeoAuditDelta,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
   getGeoStrategyReadiness,
@@ -105,5 +106,40 @@ assert.deepEqual(
 assert.ok(strategyReadiness[0].items.some((item) => item.includes("页面证据")));
 assert.ok(strategyReadiness[1].items.some((item) => item.includes("title")));
 assert.ok(strategyReadiness[2].items.some((item) => item.includes("Search Console")));
+
+const auditDelta = formatGeoAuditDelta(
+  {
+    overallScore: 82,
+    checks: [
+      { id: "a", name: "A", score: 10, maxScore: 10, status: "pass", message: "", recommendation: "" },
+      { id: "b", name: "B", score: 6, maxScore: 10, status: "warn", message: "", recommendation: "" },
+      { id: "c", name: "C", score: 3, maxScore: 10, status: "fail", message: "", recommendation: "" },
+    ],
+  },
+  {
+    overallScore: 74,
+    checks: [
+      { id: "a", name: "A", score: 8, maxScore: 10, status: "pass", message: "", recommendation: "" },
+      { id: "b", name: "B", score: 4, maxScore: 10, status: "fail", message: "", recommendation: "" },
+      { id: "c", name: "C", score: 3, maxScore: 10, status: "fail", message: "", recommendation: "" },
+    ],
+  }
+);
+assert.equal(auditDelta.scoreDelta, 8);
+assert.equal(auditDelta.passDelta, 0);
+assert.equal(auditDelta.warnDelta, 1);
+assert.equal(auditDelta.failDelta, -1);
+assert.equal(auditDelta.status, "improved");
+assert.ok(auditDelta.summary.includes("提升 8 分"));
+
+const firstAuditDelta = formatGeoAuditDelta(
+  {
+    overallScore: 70,
+    checks: [],
+  },
+  null
+);
+assert.equal(firstAuditDelta.status, "new");
+assert.equal(firstAuditDelta.summary, "这是第一份可对比的 GEO Audit 报告。");
 
 console.log("GEO display tests passed");

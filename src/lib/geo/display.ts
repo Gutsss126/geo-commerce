@@ -1,9 +1,57 @@
-import type { GeoCheckResult } from "./types";
+import type { GeoAuditReport, GeoCheckResult } from "./types";
 
 export function formatGeoScoreGap(check: Pick<GeoCheckResult, "score" | "maxScore" | "message">) {
   const gap = check.maxScore - check.score;
   if (gap <= 0) return null;
   return `还差 ${gap} 分：${check.message}`;
+}
+
+export type GeoAuditDelta = {
+  status: "new" | "improved" | "declined" | "flat";
+  scoreDelta: number;
+  passDelta: number;
+  warnDelta: number;
+  failDelta: number;
+  summary: string;
+};
+
+function countStatus(report: Pick<GeoAuditReport, "checks">, status: GeoCheckResult["status"]) {
+  return report.checks.filter((check) => check.status === status).length;
+}
+
+function signedNumber(value: number) {
+  if (value > 0) return `+${value}`;
+  return String(value);
+}
+
+export function formatGeoAuditDelta(
+  current: Pick<GeoAuditReport, "overallScore" | "checks">,
+  previous: Pick<GeoAuditReport, "overallScore" | "checks"> | null | undefined
+): GeoAuditDelta {
+  if (!previous) {
+    return {
+      status: "new",
+      scoreDelta: 0,
+      passDelta: 0,
+      warnDelta: 0,
+      failDelta: 0,
+      summary: "这是第一份可对比的 GEO Audit 报告。",
+    };
+  }
+
+  const scoreDelta = current.overallScore - previous.overallScore;
+  const passDelta = countStatus(current, "pass") - countStatus(previous, "pass");
+  const warnDelta = countStatus(current, "warn") - countStatus(previous, "warn");
+  const failDelta = countStatus(current, "fail") - countStatus(previous, "fail");
+  const status = scoreDelta >= 3 ? "improved" : scoreDelta <= -3 ? "declined" : "flat";
+  const summary =
+    status === "improved"
+      ? `比上次提升 ${scoreDelta} 分，通过项 ${signedNumber(passDelta)}，需处理项 ${signedNumber(failDelta)}。`
+      : status === "declined"
+        ? `比上次下降 ${Math.abs(scoreDelta)} 分，请优先查看新增的需处理项。`
+        : `与上次基本持平，通过项 ${signedNumber(passDelta)}，需处理项 ${signedNumber(failDelta)}。`;
+
+  return { status, scoreDelta, passDelta, warnDelta, failDelta, summary };
 }
 
 export type GeoOptimizationPlan = {
