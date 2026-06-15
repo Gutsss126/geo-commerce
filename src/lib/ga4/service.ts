@@ -23,6 +23,7 @@ export type GetGa4DiagnosticsOptions = {
   domain?: string | null;
   measurementId?: string | null;
   landingPath?: string | null;
+  propertyId?: string | null;
 };
 
 export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) {
@@ -34,7 +35,9 @@ export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) 
     defaultMeasurementId;
   const landingPath = options.landingPath?.trim() || process.env.GA4_LANDING_PATH || defaultLandingPath;
   const dataApiConfig = getGa4DataApiConfigFromEnv();
-  const dataApiConfigured = isGa4DataApiConfigured(dataApiConfig);
+  const propertyId = options.propertyId?.trim() || dataApiConfig.propertyId;
+  const effectiveDataApiConfig = { ...dataApiConfig, propertyId };
+  const dataApiConfigured = isGa4DataApiConfigured(effectiveDataApiConfig);
   const oauthConfig = getGoogleOAuthConfigFromEnv();
   const oauthConfigured = isGoogleOAuthConfigured(oauthConfig);
   let oauthCredential = null;
@@ -46,8 +49,7 @@ export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) 
     }
   }
 
-  if (oauthCredential && dataApiConfig.propertyId) {
-    const propertyId = dataApiConfig.propertyId;
+  if (oauthCredential && propertyId) {
     try {
       const accessToken =
         oauthCredential.accessToken &&
@@ -106,7 +108,7 @@ export async function getGa4Diagnostics(options: GetGa4DiagnosticsOptions = {}) 
   }
 
   try {
-    const metrics = await fetchGa4LandingPageMetrics(dataApiConfig, landingPath);
+    const metrics = await fetchGa4LandingPageMetrics(effectiveDataApiConfig, landingPath);
     return buildGa4Diagnostics({
       domain,
       measurementId,

@@ -16,6 +16,10 @@ model Site {
   locale      String   @default("en-US")
   brandVoice  String?
   wpUrl       String?
+  landingPath String   @default("/tiktok/")
+  ga4MeasurementId String?
+  ga4PropertyId    String?
+  ga4Status        String   @default("not_configured")
   apiKey      String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -1,6 +1,8 @@
 import { BarChart3, CheckCircle2, ExternalLink, KeyRound, TriangleAlert } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { getGa4Diagnostics } from "@/lib/ga4/service";
+import { prisma } from "@/lib/db";
+import { resolveSiteAuditConfig } from "@/lib/site-config";
 import {
   getGoogleOAuthConfigFromEnv,
   getStoredGa4OAuthCredential,
@@ -75,7 +77,17 @@ export default async function Ga4DiagnosticsPage({
 }: {
   searchParams?: Promise<{ oauth?: string }>;
 }) {
-  const [diagnostics, params] = await Promise.all([getGa4Diagnostics(), searchParams]);
+  const [site, params] = await Promise.all([
+    prisma.site.findFirst({ orderBy: { createdAt: "desc" } }),
+    searchParams,
+  ]);
+  const siteConfig = site ? resolveSiteAuditConfig(site) : null;
+  const diagnostics = await getGa4Diagnostics({
+    domain: siteConfig?.domain,
+    measurementId: siteConfig?.ga4MeasurementId,
+    landingPath: siteConfig?.landingPath,
+    propertyId: siteConfig?.ga4PropertyId,
+  });
   const oauthConfig = getGoogleOAuthConfigFromEnv();
   const oauthConfigured = isGoogleOAuthConfigured(oauthConfig);
   let oauthCredential = null;

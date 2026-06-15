@@ -11,6 +11,7 @@ import {
   suggestProductFaqs,
 } from "@/lib/geo/generators";
 import { generateApiKey } from "@/lib/api-key";
+import { resolveSiteAuditConfig } from "@/lib/site-config";
 
 export async function createSite(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -19,6 +20,108 @@ export async function createSite(formData: FormData) {
   const locale = String(formData.get("locale") ?? "en-US");
   const brandVoice = String(formData.get("brandVoice") ?? "").trim() || null;
   const wpUrl = String(formData.get("wpUrl") ?? "").trim() || null;
+  const siteConfig = resolveSiteAuditConfig({
+    domain,
+    landingPath: String(formData.get("landingPath") ?? ""),
+    ga4MeasurementId: String(formData.get("ga4MeasurementId") ?? ""),
+    ga4PropertyId: String(formData.get("ga4PropertyId") ?? ""),
+  });
+
+  if (!name || !siteConfig.domain) throw new Error("Site name and domain are required");
+
+  const site = await prisma.site.create({
+    data: {
+      name,
+      domain: siteConfig.domain,
+      platform,
+      locale,
+      brandVoice,
+      wpUrl,
+      landingPath: siteConfig.landingPath,
+      ga4MeasurementId: siteConfig.ga4MeasurementId,
+      ga4PropertyId: siteConfig.ga4PropertyId,
+      ga4Status: siteConfig.ga4Status,
+      apiKey: generateApiKey(),
+    },
+  });
+
+  const [pageEvidence, pageExperience] = await Promise.all([
+    collectSitePageEvidence(siteConfig.domain, siteConfig.landingPath),
+    collectSitePageExperience(siteConfig.domain, siteConfig.landingPath),
+  ]);
+  const report = auditSite({
+    name,
+    domain: siteConfig.domain,
+    brandVoice,
+    productCount: 0,
+    pageEvidence,
+  });
+  report.pageExperience = pageExperience;
+  await prisma.geoAudit.create({
+    data: {
+      siteId: site.id,
+      type: "site",
+      overallScore: report.overallScore,
+      report: JSON.stringify(report),
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/sites");
+  revalidatePath("/geo-audit");
+  revalidatePath("/diagnostics/ga4");
+}
+
+export async function updateSiteConfig(formData: FormData) {
+  const siteId = String(formData.get("siteId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const domain = String(formData.get("domain") ?? "").trim();
+  const brandVoice = String(formData.get("brandVoice") ?? "").trim() || null;
+  const wpUrl = String(formData.get("wpUrl") ?? "").trim() || null;
+  const siteConfig = resolveSiteAuditConfig({
+    domain,
+    landingPath: String(formData.get("landingPath") ?? ""),
+    ga4MeasurementId: String(formData.get("ga4MeasurementId") ?? ""),
+    ga4PropertyId: String(formData.get("ga4PropertyId") ?? ""),
+  });
+
+  if (!siteId || !name || !siteConfig.domain) {
+    throw new Error("Site configuration is incomplete");
+  }
+
+  await prisma.site.update({
+    where: { id: siteId },
+    data: {
+      name,
+      domain: siteConfig.domain,
+      brandVoice,
+      wpUrl,
+      landingPath: siteConfig.landingPath,
+      ga4MeasurementId: siteConfig.ga4MeasurementId,
+      ga4PropertyId: siteConfig.ga4PropertyId,
+      ga4Status: siteConfig.ga4Status,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/sites");
+  revalidatePath("/geo-audit");
+  revalidatePath("/diagnostics/ga4");
+}
+
+async function createSiteLegacy(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  const domain = String(formData.get("domain") ?? "").trim();
+  const platform = String(formData.get("platform") ?? "wordpress");
+  const locale = String(formData.get("locale") ?? "en-US");
+  const brandVoice = String(formData.get("brandVoice") ?? "").trim() || null;
+  const wpUrl = String(formData.get("wpUrl") ?? "").trim() || null;
+  const siteConfig = resolveSiteAuditConfig({
+    domain,
+    landingPath: String(formData.get("landingPath") ?? ""),
+    ga4MeasurementId: String(formData.get("ga4MeasurementId") ?? ""),
+    ga4PropertyId: String(formData.get("ga4PropertyId") ?? ""),
+  });
 
   if (!name || !domain) throw new Error("站点名称与域名必填");
 
@@ -143,14 +246,15 @@ export async function runSiteAudit(siteId: string) {
     where: { id: siteId },
     include: { _count: { select: { products: true } } },
   });
+  const siteConfig = resolveSiteAuditConfig(site);
 
   const [pageEvidence, pageExperience] = await Promise.all([
-    collectSitePageEvidence(site.domain),
-    collectSitePageExperience(site.domain),
+    collectSitePageEvidence(siteConfig.domain, siteConfig.landingPath),
+    collectSitePageExperience(siteConfig.domain, siteConfig.landingPath),
   ]);
   const report = auditSite({
     name: site.name,
-    domain: site.domain,
+    domain: siteConfig.domain,
     brandVoice: site.brandVoice,
     productCount: site._count.products,
     pageEvidence,
