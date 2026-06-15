@@ -3,6 +3,8 @@ import {
   formatGeoScoreGap,
   formatGeoAuditDelta,
   getGeoExecutionTasks,
+  getGeoAuditScopeItems,
+  getGeoCheckSourceLabel,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
   getGeoStrategyReadiness,
@@ -182,5 +184,69 @@ assert.equal(executionTasks[0].title, "SEO Title");
 assert.ok(executionTasks[0].copyBlock?.includes("title"));
 assert.ok(executionTasks[1].copyBlock?.includes("FAQ"));
 assert.equal(executionTasks[2].copyBlock, null);
+
+const scopeItems = getGeoAuditScopeItems({
+  domain: "fancrafti.com",
+  landingPath: "/tiktok/",
+  products: [
+    {
+      title: "Resin Lamp",
+      url: "https://fancrafti.com/product/resin-lamp/",
+      geoScore: 87,
+    },
+  ],
+  report: {
+    checks: [
+      {
+        id: "measurement-readiness",
+        name: "GA4",
+        score: 12,
+        maxScore: 12,
+        status: "pass",
+        message: "",
+        recommendation: "",
+      },
+    ],
+    evidenceItems: [
+      {
+        id: "homepage",
+        label: "Homepage",
+        source: "https://fancrafti.com/",
+        status: "found",
+        detail: "Read homepage",
+      },
+      {
+        id: "landing-page",
+        label: "Landing page",
+        source: "https://fancrafti.com/tiktok/",
+        status: "found",
+        detail: "Read landing page",
+      },
+    ],
+    pageExperience: {
+      source: "pagespeed",
+      status: "pass",
+      passCount: 8,
+      metricCount: 8,
+      checkedAt: new Date().toISOString(),
+      results: [],
+    },
+  },
+});
+
+assert.deepEqual(
+  scopeItems.map((item) => item.id),
+  ["homepage", "landing-page", "product-sample", "ga4", "page-experience"]
+);
+assert.equal(scopeItems[1].source, "https://fancrafti.com/tiktok/");
+assert.equal(scopeItems[2].status, "found");
+assert.ok(scopeItems[2].detail.includes("1 product"));
+assert.equal(scopeItems[3].status, "found");
+assert.equal(scopeItems[4].status, "found");
+
+assert.equal(getGeoCheckSourceLabel({ id: "measurement-readiness" }), "GA4 behavior data");
+assert.equal(getGeoCheckSourceLabel({ id: "product-schema-readiness" }), "Product pages");
+assert.equal(getGeoCheckSourceLabel({ id: "policy-clarity" }), "Policy pages");
+assert.equal(getGeoCheckSourceLabel({ id: "offer-clarity" }), "Homepage and landing page");
 
 console.log("GEO display tests passed");

@@ -7,6 +7,8 @@ import { ScoreBadge } from "@/components/score-badge";
 import {
   formatGeoAuditDelta,
   formatGeoScoreGap,
+  getGeoAuditScopeItems,
+  getGeoCheckSourceLabel,
   getGeoExecutionTasks,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
@@ -70,6 +72,14 @@ function PageExperienceStatusPill({ status }: { status: PageExperienceStatus }) 
   };
   const labels = { pass: "通过", warn: "待加强", fail: "需处理", unavailable: "待检测" };
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function EvidenceSourcePill({ label }: { label: string }) {
+  return (
+    <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-xs text-blue-200">
+      Evidence: {label}
+    </span>
+  );
 }
 
 function SectionCard({ section }: { section: GeoAuditSection }) {
@@ -228,6 +238,9 @@ function CheckRow({ domain, item, siteId }: { domain?: string | null; item: GeoC
       <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-medium">{item.name}</p>
+          <div className="mt-2">
+            <EvidenceSourcePill label={getGeoCheckSourceLabel(item)} />
+          </div>
           {scoreGap && <p className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">缺口：{scoreGap}</p>}
         </div>
         <div className="flex items-center gap-3">
@@ -345,7 +358,7 @@ function SeoBasicsCard({ checks }: { checks: GeoCheckResult[] }) {
   );
 }
 
-function PageExperienceCard({ report }: { report?: PageExperienceReport }) {
+function PageExperienceCard({ report, landingPath }: { report?: PageExperienceReport; landingPath?: string | null }) {
   if (!report) {
     return (
       <Card>
@@ -537,9 +550,18 @@ export default async function GeoAuditV2Page() {
   const previousReport = previousAudit ? parseReport(previousAudit.report) : null;
   const sections = report?.sections ?? [];
   const actionItems = report?.actionItems ?? [];
-  const evidenceItems = report?.evidenceItems ?? [];
   const checks = report?.checks ?? [];
   const topActions = actionItems.slice(0, 3);
+  const scopeItems = getGeoAuditScopeItems({
+    domain: primarySite?.domain,
+    landingPath: primarySite?.landingPath,
+    products: primarySite?.products.map((product) => ({
+      title: product.title,
+      url: product.url,
+      geoScore: product.geoScore,
+    })),
+    report,
+  });
 
   return (
     <div className="space-y-6">
@@ -605,15 +627,15 @@ export default async function GeoAuditV2Page() {
       <AuditDeltaCard current={report} previous={previousReport} />
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
-      <PageExperienceCard report={report?.pageExperience} />
+      <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />
       <ExecutionTasksCard actionItems={topActions} domain={primarySite?.domain} />
 
-      {evidenceItems.length > 0 && (
+      {scopeItems.length > 0 && (
         <Card>
           <CardTitle>检查范围</CardTitle>
           <CardDescription>先确认系统实际看过哪些页面和文件，再判断分数是否可信。</CardDescription>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {evidenceItems.map((item) => (
+            {scopeItems.map((item) => (
               <div key={item.id} className="rounded-lg border border-[var(--border)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>

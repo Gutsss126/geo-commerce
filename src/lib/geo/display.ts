@@ -1,4 +1,4 @@
-import type { GeoActionItem, GeoAuditReport, GeoCheckResult } from "./types";
+import type { GeoActionItem, GeoAuditReport, GeoCheckResult, GeoEvidenceItem } from "./types";
 
 export function formatGeoScoreGap(check: Pick<GeoCheckResult, "score" | "maxScore" | "message">) {
   const gap = check.maxScore - check.score;
@@ -75,6 +75,130 @@ export type GeoExecutionTask = {
   copyBlock: string | null;
   validation: string;
 };
+
+export type GeoAuditScopeProduct = {
+  title: string;
+  url?: string | null;
+  geoScore?: number | null;
+};
+
+export type GeoAuditScopeItem = {
+  id: "homepage" | "landing-page" | "product-sample" | "ga4" | "page-experience";
+  label: string;
+  source: string;
+  status: GeoEvidenceItem["status"];
+  detail: string;
+};
+
+function normalizePath(path?: string | null) {
+  const raw = (path || "/tiktok/").trim();
+  const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+function findEvidenceStatus(
+  evidenceItems: GeoEvidenceItem[] | undefined,
+  id: string
+): GeoEvidenceItem["status"] {
+  return evidenceItems?.find((item) => item.id === id)?.status ?? "not_checked";
+}
+
+function checkStatusToEvidenceStatus(
+  status?: GeoCheckResult["status"]
+): GeoEvidenceItem["status"] {
+  if (status === "pass") return "found";
+  if (status === "warn") return "partial";
+  if (status === "fail") return "missing";
+  return "not_checked";
+}
+
+export function getGeoAuditScopeItems({
+  domain,
+  landingPath,
+  products,
+  report,
+}: {
+  domain?: string | null;
+  landingPath?: string | null;
+  products?: GeoAuditScopeProduct[];
+  report?: Pick<GeoAuditReport, "checks" | "evidenceItems" | "pageExperience"> | null;
+}): GeoAuditScopeItem[] {
+  const siteDomain = normalizeDomain(domain);
+  const path = normalizePath(landingPath);
+  const productCount = products?.length ?? 0;
+  const ga4Check = report?.checks.find((check) => check.id === "measurement-readiness");
+  const pageExperienceStatus = report?.pageExperience?.status;
+
+  return [
+    {
+      id: "homepage",
+      label: "Homepage",
+      source: `https://${siteDomain}/`,
+      status: findEvidenceStatus(report?.evidenceItems, "homepage"),
+      detail: "Brand, core offer, navigation, and trust signals.",
+    },
+    {
+      id: "landing-page",
+      label: "Landing page",
+      source: `https://${siteDomain}${path}`,
+      status: findEvidenceStatus(report?.evidenceItems, "landing-page"),
+      detail: "Campaign promise, user scenario, CTA, and conversion intent.",
+    },
+    {
+      id: "product-sample",
+      label: "Product sample",
+      source: productCount > 0 ? "Top or latest product pages" : "No product pages selected",
+      status: productCount > 0 ? "found" : "not_checked",
+      detail:
+        productCount > 0
+          ? `${productCount} product page${productCount > 1 ? "s" : ""} available for entity and schema review.`
+          : "Connect or add products to include product-page evidence.",
+    },
+    {
+      id: "ga4",
+      label: "GA4 behavior data",
+      source: "GA4 Data API and realtime diagnostics",
+      status: checkStatusToEvidenceStatus(ga4Check?.status),
+      detail: "Page views, clicks, add-to-cart, checkout, and conversion loop signals.",
+    },
+    {
+      id: "page-experience",
+      label: "Page experience",
+      source: "Google PageSpeed Insights",
+      status: pageExperienceStatus && pageExperienceStatus !== "unavailable" ? "found" : "not_checked",
+      detail: "Performance, accessibility, best practices, and SEO basics.",
+    },
+  ];
+}
+
+export function getGeoCheckSourceLabel(check: Pick<GeoCheckResult, "id">) {
+  const sourceById: Record<string, string> = {
+    "brand-entity": "Homepage and site identity",
+    "offer-clarity": "Homepage and landing page",
+    "audience-fit": "Landing page",
+    "long-tail-intent": "Landing page and FAQ",
+    "title-clarity": "Homepage and landing page",
+    taxonomy: "Site navigation",
+    "catalog-coverage": "Product catalog",
+    "product-schema-readiness": "Product pages",
+    "price-trust": "Product pages",
+    "factual-density": "Product pages",
+    "canonical-url": "Page source",
+    "internal-link-entry": "Homepage and landing page",
+    "commercial-intent": "Landing page",
+    "informational-intent": "FAQ and content blocks",
+    "qa-structure": "FAQ and page content",
+    "comparison-intent": "Landing page and product copy",
+    "buyer-proof": "Reviews and trust signals",
+    "policy-clarity": "Policy pages",
+    "measurement-readiness": "GA4 behavior data",
+    "llms-txt": "llms.txt",
+    "seo-title-description": "Page source",
+    "external-search-data": "Search Console",
+  };
+
+  return sourceById[check.id] ?? "Audit evidence";
+}
 
 export function getGeoExecutionTasks(
   actionItems: GeoActionItem[],
