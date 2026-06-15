@@ -6,6 +6,7 @@ export type GeoCheckResult = {
   status: "pass" | "warn" | "fail";
   message: string;
   recommendation: string;
+  evidence?: string;
 };
 
 export type GeoAuditSection = {
@@ -27,12 +28,21 @@ export type GeoActionItem = {
   validation: string;
 };
 
+export type GeoEvidenceItem = {
+  id: string;
+  label: string;
+  status: "found" | "missing" | "partial" | "not_checked";
+  source: string;
+  detail: string;
+};
+
 export type GeoAuditReport = {
   version?: "2.0";
   overallScore: number;
   checks: GeoCheckResult[];
   sections?: GeoAuditSection[];
   actionItems?: GeoActionItem[];
+  evidenceItems?: GeoEvidenceItem[];
   summary: string;
   generatedAt: string;
 };

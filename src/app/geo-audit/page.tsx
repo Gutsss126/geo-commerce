@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
-import type { GeoActionItem, GeoAuditReport, GeoAuditSection } from "@/lib/geo/types";
+import type { GeoActionItem, GeoAuditReport, GeoAuditSection, GeoCheckResult, GeoEvidenceItem } from "@/lib/geo/types";
 
 function parseReport(report: string): GeoAuditReport | null {
   try {
@@ -22,6 +22,27 @@ function PriorityPill({ priority }: { priority: GeoActionItem["priority"] }) {
   };
   const labels = { high: "优先", medium: "建议", low: "观察" };
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[priority]}`}>{labels[priority]}</span>;
+}
+
+function EvidenceStatusPill({ status }: { status: GeoEvidenceItem["status"] }) {
+  const styles = {
+    found: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    partial: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    missing: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+    not_checked: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  };
+  const labels = { found: "已检查", partial: "部分", missing: "未发现", not_checked: "未检查" };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function CheckStatusPill({ status }: { status: GeoCheckResult["status"] }) {
+  const styles = {
+    pass: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    warn: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    fail: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+  };
+  const labels = { pass: "通过", warn: "待加强", fail: "需处理" };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
 }
 
 function SectionCard({ section }: { section: GeoAuditSection }) {
@@ -63,6 +84,8 @@ export default async function GeoAuditV2Page() {
   const report = latestAudit ? parseReport(latestAudit.report) : null;
   const sections = report?.sections ?? [];
   const actionItems = report?.actionItems ?? [];
+  const evidenceItems = report?.evidenceItems ?? [];
+  const checks = report?.checks ?? [];
   const topActions = actionItems.slice(0, 3);
 
   return (
@@ -125,6 +148,54 @@ export default async function GeoAuditV2Page() {
           </ol>
         </Card>
       </div>
+
+      {evidenceItems.length > 0 && (
+        <Card>
+          <CardTitle>检查范围</CardTitle>
+          <CardDescription>先确认系统实际看过哪些页面和文件，再判断分数是否可信。</CardDescription>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {evidenceItems.map((item) => (
+              <div key={item.id} className="rounded-lg border border-[var(--border)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{item.label}</p>
+                    <p className="mt-1 break-all text-xs text-slate-500">{item.source}</p>
+                  </div>
+                  <EvidenceStatusPill status={item.status} />
+                </div>
+                <p className="mt-3 text-sm text-slate-300">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {checks.length > 0 && (
+        <Card>
+          <CardTitle>全部检查项</CardTitle>
+          <CardDescription>每一项都展示证据、得分和下一步动作，方便运营逐条核对。</CardDescription>
+          <div className="mt-4 space-y-3">
+            {checks.map((item) => (
+              <div key={item.id} className="rounded-lg border border-[var(--border)] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="mt-1 text-sm text-slate-400">{item.message}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-blue-300">
+                      {item.score}/{item.maxScore}
+                    </span>
+                    <CheckStatusPill status={item.status} />
+                  </div>
+                </div>
+                {item.evidence && <p className="mt-3 text-sm text-slate-300">证据：{item.evidence}</p>}
+                <p className="mt-2 text-xs text-slate-500">建议：{item.recommendation}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {sections.length > 0 && (
         <Card>
