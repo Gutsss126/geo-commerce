@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan } from "../src/lib/geo/display";
+import {
+  formatGeoScoreGap,
+  getGeoFixWorkflow,
+  getGeoOptimizationPlan,
+  getGeoStrategyReadiness,
+} from "../src/lib/geo/display";
 
 assert.equal(
   formatGeoScoreGap({
@@ -82,5 +87,15 @@ assert.ok(llmsWorkflow.actions.some((action) => action.href === "https://fancraf
 
 const contentWorkflow = getGeoFixWorkflow({ id: "audience-fit" }, "fancrafti.com");
 assert.ok(contentWorkflow.reviewHint.includes("重新运行 GEO Audit"));
+
+const strategyReadiness = getGeoStrategyReadiness();
+assert.equal(strategyReadiness.length, 3);
+assert.deepEqual(
+  strategyReadiness.map((item) => item.status),
+  ["verified", "needs_work", "external_required"]
+);
+assert.ok(strategyReadiness[0].items.some((item) => item.includes("页面证据")));
+assert.ok(strategyReadiness[1].items.some((item) => item.includes("title")));
+assert.ok(strategyReadiness[2].items.some((item) => item.includes("Search Console")));
 
 console.log("GEO display tests passed");

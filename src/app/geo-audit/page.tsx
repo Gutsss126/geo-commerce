@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
-import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan } from "@/lib/geo/display";
+import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan, getGeoStrategyReadiness } from "@/lib/geo/display";
 import type { GeoActionItem, GeoAuditReport, GeoAuditSection, GeoCheckResult, GeoEvidenceItem } from "@/lib/geo/types";
 
 function parseReport(report: string): GeoAuditReport | null {
@@ -253,20 +253,12 @@ function ActionItemRow({ domain, item, siteId }: { domain?: string | null; item:
 }
 
 function StrategyReadinessCard() {
-  const rows = [
-    {
-      title: "GEO 已覆盖",
-      body: "品牌实体、页面证据、商品机器可读性、FAQ/信任信息、llms.txt、GA4 行为验证闭环。",
-    },
-    {
-      title: "SEO 待增强",
-      body: "关键词机会、标题/描述重复、索引状态、内链深度、Core Web Vitals 与搜索排名变化还需要后续版本接入。",
-    },
-    {
-      title: "严谨原则",
-      body: "先看真实页面证据，再给分；先给最少的 3 个优先动作，再提供可复制执行包；最后用 GA4 复查效果。",
-    },
-  ];
+  const rows = getGeoStrategyReadiness();
+  const styles = {
+    verified: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    needs_work: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+    external_required: "border-blue-500/30 bg-blue-500/5 text-blue-200",
+  };
 
   return (
     <Card>
@@ -274,9 +266,16 @@ function StrategyReadinessCard() {
       <CardDescription>当前版本先做 GEO 决策闭环，SEO 深度诊断会作为后续增强，不把分数包装成万能答案。</CardDescription>
       <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {rows.map((row) => (
-          <div key={row.title} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+          <div key={row.title} className={`rounded-lg border p-4 ${styles[row.status]}`}>
             <p className="text-sm font-medium text-slate-200">{row.title}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-400">{row.body}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-400">{row.summary}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {row.items.map((item) => (
+                <span key={item} className="rounded border border-slate-700/70 bg-slate-950/50 px-2 py-1 text-[11px] text-slate-300">
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
         ))}
       </div>

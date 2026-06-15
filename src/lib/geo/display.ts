@@ -31,6 +31,36 @@ export type GeoFixWorkflow = {
   actions: GeoFixWorkflowAction[];
 };
 
+export type GeoStrategyReadiness = {
+  status: "verified" | "needs_work" | "external_required";
+  title: string;
+  summary: string;
+  items: string[];
+};
+
+export function getGeoStrategyReadiness(): GeoStrategyReadiness[] {
+  return [
+    {
+      status: "verified",
+      title: "GEO 已验证",
+      summary: "当前版本已经覆盖 AI/搜索理解独立站所需的基础证据。",
+      items: ["页面证据", "品牌实体", "商品机器可读性", "FAQ/信任信息", "llms.txt", "GA4 行为验证闭环"],
+    },
+    {
+      status: "needs_work",
+      title: "SEO 基础待补",
+      summary: "这些属于 SEO 与 GEO 的共同基础，应该作为下一轮轻量检测补齐。",
+      items: ["title 与 meta description", "canonical", "robots.txt / sitemap.xml", "内链入口", "结构化数据完整度"],
+    },
+    {
+      status: "external_required",
+      title: "需要外部数据",
+      summary: "这些指标必须接入真实搜索或性能数据后再判断，不能用页面文本硬猜。",
+      items: ["Search Console 曝光和点击", "关键词排名", "Core Web Vitals", "索引覆盖状态", "搜索结果 CTR"],
+    },
+  ];
+}
+
 function normalizeDomain(domain?: string | null) {
   return (domain || "fancrafti.com").replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
