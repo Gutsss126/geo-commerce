@@ -43,8 +43,39 @@ export type GeoAuditReport = {
   sections?: GeoAuditSection[];
   actionItems?: GeoActionItem[];
   evidenceItems?: GeoEvidenceItem[];
+  pageExperience?: PageExperienceReport;
   summary: string;
   generatedAt: string;
+};
+
+export type PageExperienceStatus = "pass" | "warn" | "fail" | "unavailable";
+
+export type PageExperienceCategory = {
+  label: string;
+  score: number | null;
+  status: PageExperienceStatus;
+};
+
+export type PageExperienceUrlResult = {
+  url: string;
+  status: PageExperienceStatus;
+  fetchedAt: string;
+  categories: {
+    performance: PageExperienceCategory;
+    accessibility: PageExperienceCategory;
+    bestPractices: PageExperienceCategory;
+    seo: PageExperienceCategory;
+  };
+  topRisks: string[];
+};
+
+export type PageExperienceReport = {
+  source: "pagespeed";
+  status: PageExperienceStatus;
+  passCount: number;
+  metricCount: number;
+  checkedAt: string;
+  results: PageExperienceUrlResult[];
 };
 
 export type ProductGeoInput = {

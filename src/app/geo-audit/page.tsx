@@ -5,7 +5,15 @@ import { runSiteAudit } from "@/app/actions";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ScoreBadge } from "@/components/score-badge";
 import { formatGeoScoreGap, getGeoFixWorkflow, getGeoOptimizationPlan, getGeoStrategyReadiness } from "@/lib/geo/display";
-import type { GeoActionItem, GeoAuditReport, GeoAuditSection, GeoCheckResult, GeoEvidenceItem } from "@/lib/geo/types";
+import type {
+  GeoActionItem,
+  GeoAuditReport,
+  GeoAuditSection,
+  GeoCheckResult,
+  GeoEvidenceItem,
+  PageExperienceReport,
+  PageExperienceStatus,
+} from "@/lib/geo/types";
 
 function parseReport(report: string): GeoAuditReport | null {
   try {
@@ -43,6 +51,17 @@ function CheckStatusPill({ status }: { status: GeoCheckResult["status"] }) {
     fail: "border-rose-500/40 bg-rose-500/10 text-rose-300",
   };
   const labels = { pass: "通过", warn: "待加强", fail: "需处理" };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function PageExperienceStatusPill({ status }: { status: PageExperienceStatus }) {
+  const styles = {
+    pass: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    warn: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    fail: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+    unavailable: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  };
+  const labels = { pass: "通过", warn: "待加强", fail: "需处理", unavailable: "待检测" };
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
 }
 
@@ -319,6 +338,72 @@ function SeoBasicsCard({ checks }: { checks: GeoCheckResult[] }) {
   );
 }
 
+function PageExperienceCard({ report }: { report?: PageExperienceReport }) {
+  if (!report) {
+    return (
+      <Card>
+        <CardTitle>页面体验</CardTitle>
+        <CardDescription>重新运行 GEO Audit 后，会用 PageSpeed 检测首页和 /tiktok/ 的公开页面体验信号。</CardDescription>
+        <div className="mt-4 rounded-lg border border-slate-700/70 bg-slate-950/40 p-4 text-sm text-slate-400">
+          暂无外部检测数据
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>页面体验</CardTitle>
+          <CardDescription>来自 PageSpeed 的外部验证，只作为体验风险参考，不直接混入 GEO 总分。</CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-200">
+            {report.passCount}/{report.metricCount}
+          </span>
+          <PageExperienceStatusPill status={report.status} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        {report.results.map((result) => (
+          <details key={result.url} className="group rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+              <div>
+                <p className="break-all text-sm font-medium text-slate-200">{result.url}</p>
+                <p className="mt-1 text-xs text-slate-500">检测时间：{new Date(result.fetchedAt).toLocaleString("zh-CN")}</p>
+              </div>
+              <PageExperienceStatusPill status={result.status} />
+            </summary>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {Object.entries(result.categories).map(([key, category]) => (
+                <div key={key} className="rounded border border-[var(--border)] p-3">
+                  <p className="text-xs text-slate-500">{category.label}</p>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="text-lg font-semibold text-slate-100">{category.score ?? "—"}</span>
+                    <PageExperienceStatusPill status={category.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {result.topRisks.length > 0 && (
+              <div className="mt-4 rounded border border-amber-500/30 bg-amber-500/5 p-3">
+                <p className="text-sm font-medium text-amber-200">主要风险</p>
+                <ul className="mt-2 space-y-1 text-xs text-slate-400">
+                  {result.topRisks.map((risk) => (
+                    <li key={risk}>• {risk}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </details>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
@@ -401,6 +486,7 @@ export default async function GeoAuditV2Page() {
 
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
+      <PageExperienceCard report={report?.pageExperience} />
 
       {evidenceItems.length > 0 && (
         <Card>

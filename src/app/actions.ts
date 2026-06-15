@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { auditProduct, auditSite } from "@/lib/geo/analyzer";
 import { collectProductPageEvidence, collectSitePageEvidence } from "@/lib/geo/page-evidence";
+import { collectSitePageExperience } from "@/lib/geo/page-experience";
 import {
   generateLlmsTxt,
   optimizeDescription,
@@ -33,8 +34,12 @@ export async function createSite(formData: FormData) {
     },
   });
 
-  const pageEvidence = await collectSitePageEvidence(domain);
+  const [pageEvidence, pageExperience] = await Promise.all([
+    collectSitePageEvidence(domain),
+    collectSitePageExperience(domain),
+  ]);
   const report = auditSite({ name, domain, brandVoice, productCount: 0, pageEvidence });
+  report.pageExperience = pageExperience;
   await prisma.geoAudit.create({
     data: {
       siteId: site.id,
@@ -139,7 +144,10 @@ export async function runSiteAudit(siteId: string) {
     include: { _count: { select: { products: true } } },
   });
 
-  const pageEvidence = await collectSitePageEvidence(site.domain);
+  const [pageEvidence, pageExperience] = await Promise.all([
+    collectSitePageEvidence(site.domain),
+    collectSitePageExperience(site.domain),
+  ]);
   const report = auditSite({
     name: site.name,
     domain: site.domain,
@@ -147,6 +155,7 @@ export async function runSiteAudit(siteId: string) {
     productCount: site._count.products,
     pageEvidence,
   });
+  report.pageExperience = pageExperience;
 
   await prisma.geoAudit.create({
     data: {
