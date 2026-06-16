@@ -41,6 +41,15 @@ export type SeoSignals = {
   internalLinkCount: number;
 };
 
+const FETCH_TIMEOUT_MS = 5000;
+
+function timeoutSignal(ms: number) {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
+    return AbortSignal.timeout(ms);
+  }
+  return undefined;
+}
+
 function stripTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
 }
@@ -171,6 +180,7 @@ async function fetchText(url: string) {
         "user-agent": "GEO-Commerce-Audit/2.0",
         accept: "text/html,text/plain,application/xml;q=0.9,*/*;q=0.8",
       },
+      signal: timeoutSignal(FETCH_TIMEOUT_MS),
       next: { revalidate: 300 },
     });
     if (!response.ok) return null;
@@ -260,13 +270,14 @@ async function collectProductPageSamples(productUrls: string[]) {
 }
 
 export async function collectSitePageEvidence(domain: string, landingPath = "/tiktok/", productUrls: string[] = []): Promise<SitePageEvidence> {
-  const [homepageHtml, landingHtml, policySummary, llmsTxt, robotsTxt, sitemapXml] = await Promise.all([
+  const [homepageHtml, landingHtml, policySummary, llmsTxt, robotsTxt, sitemapXml, productSampleSummary] = await Promise.all([
     fetchText(resolveSiteUrl(domain, "/")),
     fetchText(resolveSiteUrl(domain, landingPath)),
     collectPolicyPages(domain),
     fetchText(resolveSiteUrl(domain, "/llms.txt")),
     fetchText(resolveSiteUrl(domain, "/robots.txt")),
     fetchText(resolveSiteUrl(domain, "/sitemap.xml")),
+    collectProductPageSamples(productUrls),
   ]);
 
   const homepageSignals = homepageHtml ? extractJsonLdSignals(homepageHtml) : null;
@@ -275,7 +286,6 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
   const landingUrl = resolveSiteUrl(domain, landingPath);
   const homepageSeo = homepageHtml ? extractSeoSignals(homepageHtml, homepageUrl) : null;
   const landingSeo = landingHtml ? extractSeoSignals(landingHtml, landingUrl) : null;
-  const productSampleSummary = await collectProductPageSamples(productUrls);
   const sitemapSummary = summarizeSitemap(sitemapXml, landingPath);
 
   return {

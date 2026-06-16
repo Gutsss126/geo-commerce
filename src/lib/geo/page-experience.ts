@@ -7,6 +7,7 @@ import type {
 import { resolveSiteUrl } from "./page-evidence";
 
 const PAGE_SPEED_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
+const PAGE_SPEED_TIMEOUT_MS = 8000;
 
 type PageSpeedCategoryKey = "performance" | "accessibility" | "best-practices" | "seo";
 
@@ -67,6 +68,13 @@ function extractTopRisks(audits: unknown) {
     });
 }
 
+function timeoutSignal(ms: number) {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
+    return AbortSignal.timeout(ms);
+  }
+  return undefined;
+}
+
 export function parsePageSpeedResult(url: string, payload: unknown): PageExperienceUrlResult {
   const lighthouse =
     payload && typeof payload === "object" ? (payload as Record<string, unknown>).lighthouseResult : null;
@@ -124,6 +132,7 @@ async function fetchPageSpeed(url: string): Promise<PageExperienceUrlResult> {
   try {
     const response = await fetch(`${PAGE_SPEED_ENDPOINT}?${params.toString()}`, {
       headers: { accept: "application/json" },
+      signal: timeoutSignal(PAGE_SPEED_TIMEOUT_MS),
       next: { revalidate: 1800 },
     });
     if (!response.ok) return parsePageSpeedResult(url, {});
