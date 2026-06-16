@@ -244,12 +244,21 @@ export async function runProductAudit(productId: string) {
 export async function runSiteAudit(siteId: string) {
   const site = await prisma.site.findUniqueOrThrow({
     where: { id: siteId },
-    include: { _count: { select: { products: true } } },
+    include: {
+      _count: { select: { products: true } },
+      products: {
+        where: { url: { not: null } },
+        orderBy: [{ geoScore: "asc" }, { updatedAt: "desc" }],
+        take: 5,
+        select: { url: true },
+      },
+    },
   });
   const siteConfig = resolveSiteAuditConfig(site);
+  const productUrls = site.products.map((product) => product.url).filter((url): url is string => Boolean(url));
 
   const [pageEvidence, pageExperience] = await Promise.all([
-    collectSitePageEvidence(siteConfig.domain, siteConfig.landingPath),
+    collectSitePageEvidence(siteConfig.domain, siteConfig.landingPath, productUrls),
     collectSitePageExperience(siteConfig.domain, siteConfig.landingPath),
   ]);
   const report = auditSite({

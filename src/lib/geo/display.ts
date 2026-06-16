@@ -142,6 +142,7 @@ export function getGeoAuditScopeItems({
   const siteDomain = normalizeDomain(domain);
   const path = normalizePath(landingPath);
   const productCount = products?.length ?? 0;
+  const productSampleEvidence = report?.evidenceItems?.find((item) => item.id === "product-sample");
   const ga4Check = report?.checks.find((check) => check.id === "measurement-readiness");
   const pageExperienceStatus = report?.pageExperience?.status;
 
@@ -163,12 +164,13 @@ export function getGeoAuditScopeItems({
     {
       id: "product-sample",
       label: "Product sample",
-      source: productCount > 0 ? "Top or latest product pages" : "No product pages selected",
-      status: productCount > 0 ? "found" : "not_checked",
+      source: productSampleEvidence?.source ?? (productCount > 0 ? "Top or latest product pages" : "No product pages selected"),
+      status: productSampleEvidence?.status ?? (productCount > 0 ? "partial" : "not_checked"),
       detail:
-        productCount > 0
-          ? `${productCount} product page${productCount > 1 ? "s" : ""} available for entity and schema review.`
-          : "Connect or add products to include product-page evidence.",
+        productSampleEvidence?.detail ??
+        (productCount > 0
+          ? `${productCount} product page${productCount > 1 ? "s" : ""} available; rerun audit to read product-page evidence.`
+          : "Connect or add products to include product-page evidence."),
     },
     {
       id: "ga4",

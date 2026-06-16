@@ -1,5 +1,32 @@
 import assert from "node:assert/strict";
 import { auditProduct, auditSite } from "../src/lib/geo/analyzer";
+import { summarizeProductPageSamples } from "../src/lib/geo/page-evidence";
+
+const productSampleSummary = summarizeProductPageSamples([
+  {
+    pageText: "Handmade resin lamp with USB LED base, shipping, returns, and gift packaging.",
+    productSchemaCount: 1,
+    hasProductSchema: true,
+    hasOfferSchema: true,
+    hasAvailability: true,
+    hasReviewSignal: false,
+  },
+  {
+    pageText: "Ocean resin night light with customer reviews and bedroom decor scene.",
+    productSchemaCount: 1,
+    hasProductSchema: true,
+    hasOfferSchema: true,
+    hasAvailability: false,
+    hasReviewSignal: true,
+  },
+]);
+
+assert.equal(productSampleSummary.productSampleCount, 2);
+assert.equal(productSampleSummary.productSampleSchemaCount, 2);
+assert.equal(productSampleSummary.productSampleOfferCount, 2);
+assert.equal(productSampleSummary.productSampleAvailabilityCount, 1);
+assert.equal(productSampleSummary.productSampleReviewCount, 1);
+assert.match(productSampleSummary.productSampleText, /Handmade resin lamp/);
 
 const weakSite = auditSite({
   name: "FanCrafti",
@@ -35,6 +62,13 @@ const evidencedSite = auditSite({
     sitemapFound: true,
     productSchemaCount: 5,
     productPageCount: 5,
+    productSampleText:
+      "Handmade resin lamps with USB LED base, anime fan gifts, bedroom desk decor, customer reviews, shipping, and returns.",
+    productSampleCount: 3,
+    productSampleSchemaCount: 3,
+    productSampleOfferCount: 3,
+    productSampleAvailabilityCount: 2,
+    productSampleReviewCount: 1,
   },
 });
 
@@ -57,9 +91,34 @@ assert.equal(evidencedSite.checks.find((check) => check.id === "seo-title-descri
 assert.equal(evidencedSite.checks.find((check) => check.id === "canonical-url")?.status, "pass");
 assert.equal(evidencedSite.checks.find((check) => check.id === "internal-link-entry")?.status, "pass");
 assert.equal(evidencedSite.checks.find((check) => check.id === "external-search-data")?.status, "warn");
+assert.ok(evidencedSite.evidenceItems?.some((item) => item.id === "product-sample" && item.status === "found"));
 assert.ok(weakSite.actionItems?.some((item) => item.id === "commercial-intent" || item.id === "long-tail-intent"));
 assert.equal(weakSite.checks.find((check) => check.id === "seo-title-description")?.status, "fail");
 assert.equal(weakSite.checks.find((check) => check.id === "internal-link-entry")?.status, "fail");
+
+const productSampleOnlySite = auditSite({
+  name: "FanCrafti",
+  domain: "fancrafti.com",
+  brandVoice: "",
+  productCount: 2,
+  pageEvidence: {
+    homepageText: "",
+    landingPageText: "",
+    productSampleText:
+      "FanCrafti handmade resin lamps for anime fan gifts, bedroom desk decor, gaming room collectors, bundle sale, checkout, shipping and returns.",
+    productSampleCount: 2,
+    productSampleSchemaCount: 2,
+    productSampleOfferCount: 2,
+    productSampleAvailabilityCount: 1,
+    productSampleReviewCount: 1,
+    productSchemaCount: 2,
+    productPageCount: 2,
+  },
+});
+
+assert.equal(productSampleOnlySite.checks.find((check) => check.id === "offer-clarity")?.status, "pass");
+assert.equal(productSampleOnlySite.checks.find((check) => check.id === "audience-fit")?.status, "pass");
+assert.ok(productSampleOnlySite.checks.find((check) => check.id === "commercial-intent")?.status !== "fail");
 
 const productWithoutSchema = auditProduct({
   title: "FanCrafti Ocean Resin Lamp",

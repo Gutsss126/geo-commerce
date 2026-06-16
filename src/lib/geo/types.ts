@@ -117,4 +117,10 @@ export type SitePageEvidence = {
   robotsTxtFound?: boolean;
   productSchemaCount?: number;
   productPageCount?: number;
+  productSampleText?: string | null;
+  productSampleCount?: number;
+  productSampleSchemaCount?: number;
+  productSampleOfferCount?: number;
+  productSampleAvailabilityCount?: number;
+  productSampleReviewCount?: number;
 };

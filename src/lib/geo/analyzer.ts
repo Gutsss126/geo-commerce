@@ -176,6 +176,16 @@ function buildSiteEvidenceItems(domain: string, evidence?: SitePageEvidence | nu
       detail: `检测到 ${evidence.productSchemaCount ?? 0} 个 Product JSON-LD 信号`,
     },
     {
+      id: "product-sample",
+      label: "商品样本页",
+      status: evidenceStatus((evidence.productSampleCount ?? 0) > 0),
+      source: "Top SKU / Low score SKU",
+      detail:
+        (evidence.productSampleCount ?? 0) > 0
+          ? `已读取 ${evidence.productSampleCount ?? 0} 个商品样本，Product Schema ${evidence.productSampleSchemaCount ?? 0} 个，Offer ${evidence.productSampleOfferCount ?? 0} 个`
+          : "本次未读取到商品样本页",
+    },
+    {
       id: "seo-title-meta",
       label: "SEO 标题/描述",
       status: evidenceStatus(
@@ -359,7 +369,8 @@ export function auditSite(input: SiteGeoInput): GeoAuditReport {
   const brandVoice = input.brandVoice?.trim() ?? "";
   const productCount = input.productCount ?? 0;
   const evidence = input.pageEvidence;
-  const siteText = `${brandVoice}\n${evidence?.homepageText ?? ""}\n${evidence?.landingPageText ?? ""}`;
+  const productSampleText = evidence?.productSampleText ?? "";
+  const siteText = `${brandVoice}\n${evidence?.homepageText ?? ""}\n${evidence?.landingPageText ?? ""}\n${productSampleText}`;
   const policyText = evidence?.policyText ?? "";
   const checks: GeoCheckResult[] = [];
 

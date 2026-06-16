@@ -12,6 +12,15 @@ export type ProductPageEvidence = JsonLdSignals & {
   pageText: string;
 };
 
+export type ProductPageSampleSummary = {
+  productSampleText: string;
+  productSampleCount: number;
+  productSampleSchemaCount: number;
+  productSampleOfferCount: number;
+  productSampleAvailabilityCount: number;
+  productSampleReviewCount: number;
+};
+
 export type SeoSignals = {
   title: string;
   metaDescription: string;
@@ -166,7 +175,28 @@ async function firstAvailableText(domain: string, paths: string[]) {
   return "";
 }
 
-export async function collectSitePageEvidence(domain: string, landingPath = "/tiktok/"): Promise<SitePageEvidence> {
+export function summarizeProductPageSamples(samples: ProductPageEvidence[]): ProductPageSampleSummary {
+  return {
+    productSampleText: samples
+      .map((sample) => sample.pageText)
+      .filter(Boolean)
+      .join("\n\n")
+      .slice(0, 6000),
+    productSampleCount: samples.length,
+    productSampleSchemaCount: samples.reduce((sum, sample) => sum + sample.productSchemaCount, 0),
+    productSampleOfferCount: samples.filter((sample) => sample.hasOfferSchema).length,
+    productSampleAvailabilityCount: samples.filter((sample) => sample.hasAvailability).length,
+    productSampleReviewCount: samples.filter((sample) => sample.hasReviewSignal).length,
+  };
+}
+
+async function collectProductPageSamples(productUrls: string[]) {
+  const uniqueUrls = Array.from(new Set(productUrls.filter((url) => url.startsWith("http")))).slice(0, 5);
+  const samples = await Promise.all(uniqueUrls.map((url) => collectProductPageEvidence(url)));
+  return summarizeProductPageSamples(samples.filter((sample): sample is ProductPageEvidence => Boolean(sample)));
+}
+
+export async function collectSitePageEvidence(domain: string, landingPath = "/tiktok/", productUrls: string[] = []): Promise<SitePageEvidence> {
   const [homepageHtml, landingHtml, policyText, llmsTxt, robotsTxt, sitemapXml] = await Promise.all([
     fetchText(resolveSiteUrl(domain, "/")),
     fetchText(resolveSiteUrl(domain, landingPath)),
@@ -182,6 +212,7 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
   const landingUrl = resolveSiteUrl(domain, landingPath);
   const homepageSeo = homepageHtml ? extractSeoSignals(homepageHtml, homepageUrl) : null;
   const landingSeo = landingHtml ? extractSeoSignals(landingHtml, landingUrl) : null;
+  const productSampleSummary = await collectProductPageSamples(productUrls);
 
   return {
     homepageText: homepageHtml ? htmlToReadableText(homepageHtml) : "",
@@ -198,8 +229,12 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
     llmsTxtFound: Boolean(llmsTxt),
     robotsTxtFound: Boolean(robotsTxt),
     sitemapFound: Boolean(sitemapXml),
-    productSchemaCount: (homepageSignals?.productSchemaCount ?? 0) + (landingSignals?.productSchemaCount ?? 0),
-    productPageCount: landingSignals?.hasProductSchema ? 1 : 0,
+    productSchemaCount:
+      (homepageSignals?.productSchemaCount ?? 0) +
+      (landingSignals?.productSchemaCount ?? 0) +
+      productSampleSummary.productSampleSchemaCount,
+    productPageCount: (landingSignals?.hasProductSchema ? 1 : 0) + productSampleSummary.productSampleCount,
+    ...productSampleSummary,
   };
 }
 

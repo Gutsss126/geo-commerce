@@ -224,6 +224,13 @@ const scopeItems = getGeoAuditScopeItems({
         status: "found",
         detail: "Read landing page",
       },
+      {
+        id: "product-sample",
+        label: "Product sample",
+        source: "Top SKU",
+        status: "found",
+        detail: "Read 1 product sample",
+      },
     ],
     pageExperience: {
       source: "pagespeed",
