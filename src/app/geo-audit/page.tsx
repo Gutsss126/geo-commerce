@@ -14,6 +14,7 @@ import {
   getGeoOptimizationPlan,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
+  getGeoValidationLoopItems,
 } from "@/lib/geo/display";
 import type {
   GeoActionItem,
@@ -91,6 +92,22 @@ function ScopeGapPill({ severity }: { severity: "high" | "medium" | "low" }) {
   };
   const labels = { high: "High", medium: "Medium", low: "Low" };
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[severity]}`}>{labels[severity]}</span>;
+}
+
+function ValidationStatusPill({ status }: { status: "verified" | "watching" | "blocked" | "not_connected" }) {
+  const styles = {
+    verified: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    watching: "border-blue-500/40 bg-blue-500/10 text-blue-300",
+    blocked: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+    not_connected: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  };
+  const labels = {
+    verified: "已验证",
+    watching: "观察中",
+    blocked: "受阻",
+    not_connected: "待接入",
+  };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
 }
 
 function SectionCard({ section }: { section: GeoAuditSection }) {
@@ -326,6 +343,38 @@ function StrategyReadinessCard() {
                 </span>
               ))}
             </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function ValidationLoopCard({
+  items,
+}: {
+  items: ReturnType<typeof getGeoValidationLoopItems>;
+}) {
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>GEO 验证闭环</CardTitle>
+          <CardDescription>不承诺收录和排名，只追踪优化是否逐步变成可见、可理解、可访问、可转化。</CardDescription>
+        </div>
+        <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">
+          4 layers
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => (
+          <div key={item.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-medium text-slate-200">{item.label}</p>
+              <ValidationStatusPill status={item.status} />
+            </div>
+            <p className="mt-3 text-sm leading-5 text-slate-300">{item.signal}</p>
+            <p className="mt-3 text-xs leading-5 text-slate-500">{item.nextStep}</p>
           </div>
         ))}
       </div>
@@ -574,6 +623,11 @@ export default async function GeoAuditV2Page() {
     report,
   });
   const scopeGaps = getGeoScopeGaps(scopeItems);
+  const validationLoopItems = getGeoValidationLoopItems({
+    current: report,
+    previous: previousReport,
+    scopeGaps,
+  });
 
   return (
     <div className="space-y-6">
@@ -637,6 +691,7 @@ export default async function GeoAuditV2Page() {
       </div>
 
       <AuditDeltaCard current={report} previous={previousReport} />
+      <ValidationLoopCard items={validationLoopItems} />
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
       <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />

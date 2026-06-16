@@ -98,6 +98,14 @@ export type GeoScopeGap = {
   nextStep: string;
 };
 
+export type GeoValidationLoopItem = {
+  id: "technical" | "understanding" | "traffic" | "commerce";
+  label: string;
+  status: "verified" | "watching" | "blocked" | "not_connected";
+  signal: string;
+  nextStep: string;
+};
+
 function normalizePath(path?: string | null) {
   const raw = (path || "/tiktok/").trim();
   const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
@@ -231,6 +239,95 @@ export function getGeoScopeGaps(scopeItems: GeoAuditScopeItem[]): GeoScopeGap[] 
       reason: item.detail,
       nextStep: nextSteps[item.id],
     }));
+}
+
+function findCheck(
+  report: Pick<GeoAuditReport, "checks"> | null | undefined,
+  id: string
+) {
+  return report?.checks.find((check) => check.id === id) ?? null;
+}
+
+function allChecksPass(
+  report: Pick<GeoAuditReport, "checks"> | null | undefined,
+  ids: string[]
+) {
+  return ids.every((id) => findCheck(report, id)?.status === "pass");
+}
+
+function anyCheckFails(
+  report: Pick<GeoAuditReport, "checks"> | null | undefined,
+  ids: string[]
+) {
+  return ids.some((id) => findCheck(report, id)?.status === "fail");
+}
+
+export function getGeoValidationLoopItems({
+  current,
+  previous,
+  scopeGaps,
+}: {
+  current: Pick<GeoAuditReport, "overallScore" | "checks"> | null | undefined;
+  previous?: Pick<GeoAuditReport, "overallScore" | "checks"> | null;
+  scopeGaps?: GeoScopeGap[];
+}): GeoValidationLoopItem[] {
+  const highScopeGap = (scopeGaps ?? []).some((gap) => gap.severity === "high");
+  const scoreDelta = current && previous ? current.overallScore - previous.overallScore : null;
+  const deltaSignal = scoreDelta === null ? "No previous audit yet" : `Score change ${signedNumber(scoreDelta)}`;
+  const understandingChecks = ["brand-entity", "offer-clarity", "audience-fit"];
+  const measurementCheck = findCheck(current, "measurement-readiness");
+  const trafficCheck = findCheck(current, "traffic");
+
+  return [
+    {
+      id: "technical",
+      label: "基础有效",
+      status: highScopeGap ? "blocked" : current ? "verified" : "watching",
+      signal: highScopeGap ? "Key evidence is missing" : deltaSignal,
+      nextStep: highScopeGap
+        ? "Fix high-priority evidence gaps before judging optimization impact."
+        : "Keep sitemap, robots, canonical, schema, and page access stable.",
+    },
+    {
+      id: "understanding",
+      label: "理解有效",
+      status: anyCheckFails(current, understandingChecks)
+        ? "blocked"
+        : allChecksPass(current, understandingChecks)
+          ? "verified"
+          : "watching",
+      signal: allChecksPass(current, understandingChecks)
+        ? "Brand, offer, and audience checks pass"
+        : "Some entity or intent checks still need work",
+      nextStep: "Ask AI/search-style questions and compare whether the brand, offer, and target user are described correctly.",
+    },
+    {
+      id: "traffic",
+      label: "流量有效",
+      status:
+        measurementCheck?.status === "fail"
+          ? "blocked"
+          : trafficCheck?.status === "pass"
+            ? "verified"
+            : measurementCheck?.status === "pass"
+              ? "watching"
+              : "not_connected",
+      signal:
+        trafficCheck?.status === "pass"
+          ? trafficCheck.message
+          : measurementCheck?.status === "pass"
+            ? "GA4 is connected; wait for 7/14/28-day comparison"
+            : "GA4 or Search Console evidence is not ready",
+      nextStep: "Compare Search Console impressions/clicks and GA4 sessions after each optimization window.",
+    },
+    {
+      id: "commerce",
+      label: "商业有效",
+      status: "not_connected",
+      signal: "Orders, checkout, and purchase attribution are not connected yet",
+      nextStep: "Connect add_to_cart, checkout, purchase, or WooCommerce order data before claiming revenue impact.",
+    },
+  ];
 }
 
 export function getGeoExecutionTasks(

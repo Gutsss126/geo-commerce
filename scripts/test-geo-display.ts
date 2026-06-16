@@ -5,6 +5,7 @@ import {
   getGeoExecutionTasks,
   getGeoAuditScopeItems,
   getGeoScopeGaps,
+  getGeoValidationLoopItems,
   getGeoCheckSourceLabel,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
@@ -289,5 +290,57 @@ assert.equal(scopeGaps[0].severity, "high");
 assert.ok(scopeGaps[0].nextStep.includes("landing page"));
 assert.equal(scopeGaps[1].severity, "medium");
 assert.equal(scopeGaps[2].severity, "low");
+
+const validationLoop = getGeoValidationLoopItems({
+  current: {
+    overallScore: 82,
+    checks: [
+      { id: "brand-entity", name: "Brand", score: 16, maxScore: 16, status: "pass", message: "", recommendation: "" },
+      { id: "offer-clarity", name: "Offer", score: 16, maxScore: 16, status: "pass", message: "", recommendation: "" },
+      { id: "audience-fit", name: "Audience", score: 12, maxScore: 12, status: "pass", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4", score: 12, maxScore: 12, status: "pass", message: "", recommendation: "" },
+      { id: "traffic", name: "Traffic", score: 8, maxScore: 8, status: "pass", message: "28 days sessions", recommendation: "" },
+    ],
+  },
+  previous: {
+    overallScore: 74,
+    checks: [],
+  },
+  scopeGaps: [],
+});
+
+assert.deepEqual(
+  validationLoop.map((item) => item.id),
+  ["technical", "understanding", "traffic", "commerce"]
+);
+assert.equal(validationLoop[0].status, "verified");
+assert.equal(validationLoop[1].status, "verified");
+assert.equal(validationLoop[2].status, "verified");
+assert.equal(validationLoop[3].status, "not_connected");
+assert.ok(validationLoop[0].signal.includes("+8"));
+
+const blockedValidationLoop = getGeoValidationLoopItems({
+  current: {
+    overallScore: 60,
+    checks: [
+      { id: "brand-entity", name: "Brand", score: 4, maxScore: 16, status: "fail", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4", score: 4, maxScore: 12, status: "fail", message: "", recommendation: "" },
+    ],
+  },
+  previous: null,
+  scopeGaps: [
+    {
+      id: "landing-page",
+      label: "Landing page",
+      severity: "high",
+      reason: "Missing landing page",
+      nextStep: "Fix landing page",
+    },
+  ],
+});
+
+assert.equal(blockedValidationLoop[0].status, "blocked");
+assert.equal(blockedValidationLoop[1].status, "blocked");
+assert.equal(blockedValidationLoop[2].status, "blocked");
 
 console.log("GEO display tests passed");
