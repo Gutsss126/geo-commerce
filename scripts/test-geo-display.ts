@@ -231,6 +231,20 @@ const scopeItems = getGeoAuditScopeItems({
         status: "found",
         detail: "Read 1 product sample",
       },
+      {
+        id: "policies",
+        label: "Policies",
+        source: "shipping / returns / contact / about",
+        status: "found",
+        detail: "Read policy pages",
+      },
+      {
+        id: "crawl-files",
+        label: "Crawl files",
+        source: "robots.txt / sitemap.xml",
+        status: "partial",
+        detail: "robots found, sitemap missing",
+      },
     ],
     pageExperience: {
       source: "pagespeed",
@@ -245,13 +259,15 @@ const scopeItems = getGeoAuditScopeItems({
 
 assert.deepEqual(
   scopeItems.map((item) => item.id),
-  ["homepage", "landing-page", "product-sample", "ga4", "page-experience"]
+  ["homepage", "landing-page", "product-sample", "policy-pages", "crawl-files", "ga4", "page-experience"]
 );
 assert.equal(scopeItems[1].source, "https://fancrafti.com/tiktok/");
 assert.equal(scopeItems[2].status, "found");
 assert.ok(scopeItems[2].detail.includes("1 product"));
 assert.equal(scopeItems[3].status, "found");
-assert.equal(scopeItems[4].status, "found");
+assert.equal(scopeItems[4].status, "partial");
+assert.equal(scopeItems[5].status, "found");
+assert.equal(scopeItems[6].status, "found");
 
 assert.equal(getGeoCheckSourceLabel({ id: "measurement-readiness" }), "GA4 behavior data");
 assert.equal(getGeoCheckSourceLabel({ id: "product-schema-readiness" }), "Product pages");
@@ -281,6 +297,13 @@ const scopeGaps = getGeoScopeGaps([
     detail: "Realtime works, historical report is empty",
   },
   {
+    id: "policy-pages",
+    label: "Policy pages",
+    source: "shipping / returns / contact / about",
+    status: "missing",
+    detail: "No policies found",
+  },
+  {
     id: "product-sample",
     label: "Product sample",
     source: "No product pages selected",
@@ -291,12 +314,13 @@ const scopeGaps = getGeoScopeGaps([
 
 assert.deepEqual(
   scopeGaps.map((gap) => gap.id),
-  ["landing-page", "ga4", "product-sample"]
+  ["landing-page", "ga4", "policy-pages", "product-sample"]
 );
 assert.equal(scopeGaps[0].severity, "high");
 assert.ok(scopeGaps[0].nextStep.includes("landing page"));
 assert.equal(scopeGaps[1].severity, "medium");
-assert.equal(scopeGaps[2].severity, "low");
+assert.equal(scopeGaps[2].severity, "high");
+assert.equal(scopeGaps[3].severity, "low");
 
 const validationLoop = getGeoValidationLoopItems({
   current: {

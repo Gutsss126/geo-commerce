@@ -83,7 +83,14 @@ export type GeoAuditScopeProduct = {
 };
 
 export type GeoAuditScopeItem = {
-  id: "homepage" | "landing-page" | "product-sample" | "ga4" | "page-experience";
+  id:
+    | "homepage"
+    | "landing-page"
+    | "product-sample"
+    | "policy-pages"
+    | "crawl-files"
+    | "ga4"
+    | "page-experience";
   label: string;
   source: string;
   status: GeoEvidenceItem["status"];
@@ -143,6 +150,8 @@ export function getGeoAuditScopeItems({
   const path = normalizePath(landingPath);
   const productCount = products?.length ?? 0;
   const productSampleEvidence = report?.evidenceItems?.find((item) => item.id === "product-sample");
+  const policyEvidence = report?.evidenceItems?.find((item) => item.id === "policies");
+  const crawlFilesEvidence = report?.evidenceItems?.find((item) => item.id === "crawl-files");
   const ga4Check = report?.checks.find((check) => check.id === "measurement-readiness");
   const pageExperienceStatus = report?.pageExperience?.status;
 
@@ -171,6 +180,20 @@ export function getGeoAuditScopeItems({
         (productCount > 0
           ? `${productCount} product page${productCount > 1 ? "s" : ""} available; rerun audit to read product-page evidence.`
           : "Connect or add products to include product-page evidence."),
+    },
+    {
+      id: "policy-pages",
+      label: "Policy pages",
+      source: policyEvidence?.source ?? "shipping / returns / contact / about",
+      status: policyEvidence?.status ?? "not_checked",
+      detail: policyEvidence?.detail ?? "Shipping, returns, contact, and brand trust pages have not been checked yet.",
+    },
+    {
+      id: "crawl-files",
+      label: "Crawl files",
+      source: crawlFilesEvidence?.source ?? `https://${siteDomain}/robots.txt and /sitemap.xml`,
+      status: crawlFilesEvidence?.status ?? "not_checked",
+      detail: crawlFilesEvidence?.detail ?? "robots.txt and sitemap.xml help search systems discover crawlable pages.",
     },
     {
       id: "ga4",
@@ -223,6 +246,8 @@ export function getGeoScopeGaps(scopeItems: GeoAuditScopeItem[]): GeoScopeGap[] 
     homepage: "Make sure the homepage is public and rerun GEO Audit.",
     "landing-page": "Open the landing page in an incognito window, confirm it loads, then rerun GEO Audit.",
     "product-sample": "Sync or add representative product pages so the audit can inspect product facts and schema.",
+    "policy-pages": "Publish or link Shipping, Returns, Contact, and About pages, then rerun GEO Audit.",
+    "crawl-files": "Confirm robots.txt and sitemap.xml are public and include the important pages.",
     ga4: "Confirm GA4 Property ID, OAuth access, and conversion events, then refresh diagnostics.",
     "page-experience": "Rerun GEO Audit after the public pages are reachable by PageSpeed.",
   };
