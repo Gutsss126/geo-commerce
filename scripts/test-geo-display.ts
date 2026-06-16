@@ -4,6 +4,7 @@ import {
   formatGeoAuditDelta,
   getGeoExecutionTasks,
   getGeoAuditScopeItems,
+  getGeoScopeGaps,
   getGeoCheckSourceLabel,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
@@ -248,5 +249,45 @@ assert.equal(getGeoCheckSourceLabel({ id: "measurement-readiness" }), "GA4 behav
 assert.equal(getGeoCheckSourceLabel({ id: "product-schema-readiness" }), "Product pages");
 assert.equal(getGeoCheckSourceLabel({ id: "policy-clarity" }), "Policy pages");
 assert.equal(getGeoCheckSourceLabel({ id: "offer-clarity" }), "Homepage and landing page");
+
+const scopeGaps = getGeoScopeGaps([
+  {
+    id: "homepage",
+    label: "Homepage",
+    source: "https://fancrafti.com/",
+    status: "found",
+    detail: "Read homepage",
+  },
+  {
+    id: "landing-page",
+    label: "Landing page",
+    source: "https://fancrafti.com/tiktok/",
+    status: "missing",
+    detail: "Landing page was not readable",
+  },
+  {
+    id: "ga4",
+    label: "GA4 behavior data",
+    source: "GA4 Data API",
+    status: "partial",
+    detail: "Realtime works, historical report is empty",
+  },
+  {
+    id: "product-sample",
+    label: "Product sample",
+    source: "No product pages selected",
+    status: "not_checked",
+    detail: "No products",
+  },
+]);
+
+assert.deepEqual(
+  scopeGaps.map((gap) => gap.id),
+  ["landing-page", "ga4", "product-sample"]
+);
+assert.equal(scopeGaps[0].severity, "high");
+assert.ok(scopeGaps[0].nextStep.includes("landing page"));
+assert.equal(scopeGaps[1].severity, "medium");
+assert.equal(scopeGaps[2].severity, "low");
 
 console.log("GEO display tests passed");

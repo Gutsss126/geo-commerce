@@ -12,6 +12,7 @@ import {
   getGeoExecutionTasks,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
+  getGeoScopeGaps,
   getGeoStrategyReadiness,
 } from "@/lib/geo/display";
 import type {
@@ -80,6 +81,16 @@ function EvidenceSourcePill({ label }: { label: string }) {
       Evidence: {label}
     </span>
   );
+}
+
+function ScopeGapPill({ severity }: { severity: "high" | "medium" | "low" }) {
+  const styles = {
+    high: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+    medium: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    low: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  };
+  const labels = { high: "High", medium: "Medium", low: "Low" };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[severity]}`}>{labels[severity]}</span>;
 }
 
 function SectionCard({ section }: { section: GeoAuditSection }) {
@@ -562,6 +573,7 @@ export default async function GeoAuditV2Page() {
     })),
     report,
   });
+  const scopeGaps = getGeoScopeGaps(scopeItems);
 
   return (
     <div className="space-y-6">
@@ -645,6 +657,32 @@ export default async function GeoAuditV2Page() {
                   <EvidenceStatusPill status={item.status} />
                 </div>
                 <p className="mt-3 text-sm text-slate-300">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {scopeGaps.length > 0 && (
+        <Card>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>证据缺口</CardTitle>
+              <CardDescription>这些不是新的扣分项，而是说明本次诊断哪里还不够完整。</CardDescription>
+            </div>
+            <span className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
+              {scopeGaps.length} gap{scopeGaps.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {scopeGaps.map((gap) => (
+              <div key={gap.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-medium text-slate-200">{gap.label}</p>
+                  <ScopeGapPill severity={gap.severity} />
+                </div>
+                <p className="mt-2 text-sm leading-5 text-slate-400">{gap.reason}</p>
+                <p className="mt-3 text-xs leading-5 text-slate-500">{gap.nextStep}</p>
               </div>
             ))}
           </div>

@@ -90,6 +90,14 @@ export type GeoAuditScopeItem = {
   detail: string;
 };
 
+export type GeoScopeGap = {
+  id: GeoAuditScopeItem["id"];
+  label: string;
+  severity: "high" | "medium" | "low";
+  reason: string;
+  nextStep: string;
+};
+
 function normalizePath(path?: string | null) {
   const raw = (path || "/tiktok/").trim();
   const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
@@ -198,6 +206,31 @@ export function getGeoCheckSourceLabel(check: Pick<GeoCheckResult, "id">) {
   };
 
   return sourceById[check.id] ?? "Audit evidence";
+}
+
+export function getGeoScopeGaps(scopeItems: GeoAuditScopeItem[]): GeoScopeGap[] {
+  const nextSteps: Record<GeoAuditScopeItem["id"], string> = {
+    homepage: "Make sure the homepage is public and rerun GEO Audit.",
+    "landing-page": "Open the landing page in an incognito window, confirm it loads, then rerun GEO Audit.",
+    "product-sample": "Sync or add representative product pages so the audit can inspect product facts and schema.",
+    ga4: "Confirm GA4 Property ID, OAuth access, and conversion events, then refresh diagnostics.",
+    "page-experience": "Rerun GEO Audit after the public pages are reachable by PageSpeed.",
+  };
+
+  return scopeItems
+    .filter((item) => item.status !== "found")
+    .map((item) => ({
+      id: item.id,
+      label: item.label,
+      severity:
+        item.status === "missing"
+          ? "high"
+          : item.status === "partial"
+            ? "medium"
+            : "low",
+      reason: item.detail,
+      nextStep: nextSteps[item.id],
+    }));
 }
 
 export function getGeoExecutionTasks(
