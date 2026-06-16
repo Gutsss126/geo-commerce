@@ -27,6 +27,13 @@ export type PolicyPageSummary = {
   policyPageSources: string[];
 };
 
+export type SitemapSummary = {
+  sitemapUrlCount: number;
+  sitemapHasLandingPage: boolean;
+  sitemapHasProductPage: boolean;
+  sitemapHasPolicyPage: boolean;
+};
+
 export type SeoSignals = {
   title: string;
   metaDescription: string;
@@ -197,6 +204,30 @@ export function summarizePolicyPages(pages: Array<{ path: string; text?: string 
   };
 }
 
+function normalizePathForMatch(value: string) {
+  const path = value.trim().replace(/^https?:\/\/[^/]+/i, "");
+  const withLeadingSlash = path.startsWith("/") ? path : `/${path}`;
+  return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+export function summarizeSitemap(xml: string | null | undefined, landingPath = "/tiktok/"): SitemapSummary {
+  const urls = Array.from((xml ?? "").matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)).map((match) =>
+    normalizePathForMatch(match[1])
+  );
+  const normalizedLandingPath = normalizePathForMatch(landingPath);
+
+  return {
+    sitemapUrlCount: urls.length,
+    sitemapHasLandingPage: urls.some((url) => url === normalizedLandingPath),
+    sitemapHasProductPage: urls.some((url) =>
+      ["/product/", "/products/", "/shop/", "/collections/"].some((marker) => url.includes(marker))
+    ),
+    sitemapHasPolicyPage: urls.some((url) =>
+      ["shipping", "return", "refund", "contact", "about", "policy"].some((marker) => url.includes(marker))
+    ),
+  };
+}
+
 async function collectPolicyPages(domain: string) {
   const pages = await Promise.all(
     policyPaths.map(async (path) => {
@@ -245,6 +276,7 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
   const homepageSeo = homepageHtml ? extractSeoSignals(homepageHtml, homepageUrl) : null;
   const landingSeo = landingHtml ? extractSeoSignals(landingHtml, landingUrl) : null;
   const productSampleSummary = await collectProductPageSamples(productUrls);
+  const sitemapSummary = summarizeSitemap(sitemapXml, landingPath);
 
   return {
     homepageText: homepageHtml ? htmlToReadableText(homepageHtml) : "",
@@ -263,6 +295,7 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
     llmsTxtFound: Boolean(llmsTxt),
     robotsTxtFound: Boolean(robotsTxt),
     sitemapFound: Boolean(sitemapXml),
+    ...sitemapSummary,
     productSchemaCount:
       (homepageSignals?.productSchemaCount ?? 0) +
       (landingSignals?.productSchemaCount ?? 0) +

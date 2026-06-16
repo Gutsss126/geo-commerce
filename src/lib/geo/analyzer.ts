@@ -169,6 +169,16 @@ function buildSiteEvidenceItems(domain: string, evidence?: SitePageEvidence | nu
       detail: `robots.txt ${evidence.robotsTxtFound ? "已发现" : "未发现"}，sitemap.xml ${evidence.sitemapFound ? "已发现" : "未发现"}`,
     },
     {
+      id: "sitemap-coverage",
+      label: "Sitemap coverage",
+      status: evidenceStatus(
+        Boolean(evidence.sitemapFound && evidence.sitemapHasLandingPage && (evidence.sitemapHasProductPage || evidence.sitemapHasPolicyPage)),
+        Boolean(evidence.sitemapFound && (evidence.sitemapHasLandingPage || evidence.sitemapHasProductPage || evidence.sitemapHasPolicyPage))
+      ),
+      source: `https://${domain}/sitemap.xml`,
+      detail: `URLs ${evidence.sitemapUrlCount ?? 0}; landing ${evidence.sitemapHasLandingPage ? "included" : "not found"}; product ${evidence.sitemapHasProductPage ? "included" : "not found"}; policy ${evidence.sitemapHasPolicyPage ? "included" : "not found"}`,
+    },
+    {
       id: "product-schema",
       label: "Product Schema",
       status: evidenceStatus((evidence.productSchemaCount ?? 0) > 0),

@@ -116,6 +116,10 @@ export type SitePageEvidence = {
   policyPageSources?: string[];
   llmsTxtFound?: boolean;
   sitemapFound?: boolean;
+  sitemapUrlCount?: number;
+  sitemapHasLandingPage?: boolean;
+  sitemapHasProductPage?: boolean;
+  sitemapHasPolicyPage?: boolean;
   robotsTxtFound?: boolean;
   productSchemaCount?: number;
   productPageCount?: number;

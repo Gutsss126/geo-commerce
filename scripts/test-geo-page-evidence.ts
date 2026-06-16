@@ -1,6 +1,27 @@
 import assert from "node:assert/strict";
 import { auditProduct, auditSite } from "../src/lib/geo/analyzer";
-import { summarizePolicyPages, summarizeProductPageSamples } from "../src/lib/geo/page-evidence";
+import {
+  summarizePolicyPages,
+  summarizeProductPageSamples,
+  summarizeSitemap,
+} from "../src/lib/geo/page-evidence";
+
+const sitemapSummary = summarizeSitemap(
+  `
+  <urlset>
+    <url><loc>https://fancrafti.com/</loc></url>
+    <url><loc>https://fancrafti.com/tiktok/</loc></url>
+    <url><loc>https://fancrafti.com/product/ocean-resin-lamp/</loc></url>
+    <url><loc>https://fancrafti.com/shipping-policy/</loc></url>
+  </urlset>
+  `,
+  "/tiktok/"
+);
+
+assert.equal(sitemapSummary.sitemapUrlCount, 4);
+assert.equal(sitemapSummary.sitemapHasLandingPage, true);
+assert.equal(sitemapSummary.sitemapHasProductPage, true);
+assert.equal(sitemapSummary.sitemapHasPolicyPage, true);
 
 const policySummary = summarizePolicyPages([
   { path: "/shipping-policy/", text: "Shipping takes 7-12 days with tracking." },
@@ -71,6 +92,10 @@ const evidencedSite = auditSite({
     llmsTxtFound: true,
     robotsTxtFound: true,
     sitemapFound: true,
+    sitemapUrlCount: 42,
+    sitemapHasLandingPage: true,
+    sitemapHasProductPage: true,
+    sitemapHasPolicyPage: true,
     productSchemaCount: 5,
     productPageCount: 5,
     productSampleText:
@@ -90,6 +115,7 @@ assert.ok(
 assert.ok(evidencedSite.actionItems?.every((item) => item.id !== "llms-txt"));
 assert.ok(evidencedSite.evidenceItems?.some((item) => item.id === "landing-page" && item.status === "found"));
 assert.ok(evidencedSite.evidenceItems?.some((item) => item.id === "llms" && item.status === "found"));
+assert.ok(evidencedSite.evidenceItems?.some((item) => item.id === "sitemap-coverage" && item.status === "found"));
 assert.match(
   evidencedSite.checks.find((check) => check.id === "policy-clarity")?.evidence ?? "",
   /Shipping|policy|shipping/i
