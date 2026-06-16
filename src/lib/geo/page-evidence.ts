@@ -21,6 +21,12 @@ export type ProductPageSampleSummary = {
   productSampleReviewCount: number;
 };
 
+export type PolicyPageSummary = {
+  policyText: string;
+  policyPageCount: number;
+  policyPageSources: string[];
+};
+
 export type SeoSignals = {
   title: string;
   metaDescription: string;
@@ -167,12 +173,38 @@ async function fetchText(url: string) {
   }
 }
 
-async function firstAvailableText(domain: string, paths: string[]) {
-  for (const path of paths) {
-    const text = await fetchText(resolveSiteUrl(domain, path));
-    if (text) return htmlToReadableText(text);
-  }
-  return "";
+const policyPaths = [
+  "/shipping/",
+  "/shipping-policy/",
+  "/returns/",
+  "/return-policy/",
+  "/refund-policy/",
+  "/pages/shipping",
+  "/pages/returns",
+  "/contact/",
+  "/about/",
+];
+
+export function summarizePolicyPages(pages: Array<{ path: string; text?: string | null }>): PolicyPageSummary {
+  const availablePages = pages
+    .map((page) => ({ path: page.path, text: (page.text ?? "").trim() }))
+    .filter((page) => page.text.length > 0);
+
+  return {
+    policyText: availablePages.map((page) => page.text).join("\n\n").slice(0, 6000),
+    policyPageCount: availablePages.length,
+    policyPageSources: availablePages.map((page) => page.path),
+  };
+}
+
+async function collectPolicyPages(domain: string) {
+  const pages = await Promise.all(
+    policyPaths.map(async (path) => {
+      const html = await fetchText(resolveSiteUrl(domain, path));
+      return { path, text: html ? htmlToReadableText(html) : "" };
+    })
+  );
+  return summarizePolicyPages(pages);
 }
 
 export function summarizeProductPageSamples(samples: ProductPageEvidence[]): ProductPageSampleSummary {
@@ -197,10 +229,10 @@ async function collectProductPageSamples(productUrls: string[]) {
 }
 
 export async function collectSitePageEvidence(domain: string, landingPath = "/tiktok/", productUrls: string[] = []): Promise<SitePageEvidence> {
-  const [homepageHtml, landingHtml, policyText, llmsTxt, robotsTxt, sitemapXml] = await Promise.all([
+  const [homepageHtml, landingHtml, policySummary, llmsTxt, robotsTxt, sitemapXml] = await Promise.all([
     fetchText(resolveSiteUrl(domain, "/")),
     fetchText(resolveSiteUrl(domain, landingPath)),
-    firstAvailableText(domain, ["/shipping/", "/shipping-policy/", "/returns/", "/refund-policy/", "/pages/shipping", "/pages/returns", "/contact/", "/about/"]),
+    collectPolicyPages(domain),
     fetchText(resolveSiteUrl(domain, "/llms.txt")),
     fetchText(resolveSiteUrl(domain, "/robots.txt")),
     fetchText(resolveSiteUrl(domain, "/sitemap.xml")),
@@ -225,7 +257,9 @@ export async function collectSitePageEvidence(domain: string, landingPath = "/ti
     landingPageCanonical: landingSeo?.canonical ?? "",
     homepageInternalLinkCount: homepageSeo?.internalLinkCount ?? 0,
     landingPageInternalLinkCount: landingSeo?.internalLinkCount ?? 0,
-    policyText,
+    policyText: policySummary.policyText,
+    policyPageCount: policySummary.policyPageCount,
+    policyPageSources: policySummary.policyPageSources,
     llmsTxtFound: Boolean(llmsTxt),
     robotsTxtFound: Boolean(robotsTxt),
     sitemapFound: Boolean(sitemapXml),

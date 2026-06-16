@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import { auditProduct, auditSite } from "../src/lib/geo/analyzer";
-import { summarizeProductPageSamples } from "../src/lib/geo/page-evidence";
+import { summarizePolicyPages, summarizeProductPageSamples } from "../src/lib/geo/page-evidence";
+
+const policySummary = summarizePolicyPages([
+  { path: "/shipping-policy/", text: "Shipping takes 7-12 days with tracking." },
+  { path: "/refund-policy/", text: "Returns and refunds are accepted within 30 days." },
+  { path: "/contact/", text: "" },
+]);
+
+assert.equal(policySummary.policyPageCount, 2);
+assert.deepEqual(policySummary.policyPageSources, ["/shipping-policy/", "/refund-policy/"]);
+assert.match(policySummary.policyText, /Shipping takes/);
+assert.match(policySummary.policyText, /Returns and refunds/);
 
 const productSampleSummary = summarizeProductPageSamples([
   {

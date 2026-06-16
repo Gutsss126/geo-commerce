@@ -112,6 +112,8 @@ export type SitePageEvidence = {
   homepageInternalLinkCount?: number;
   landingPageInternalLinkCount?: number;
   policyText?: string | null;
+  policyPageCount?: number;
+  policyPageSources?: string[];
   llmsTxtFound?: boolean;
   sitemapFound?: boolean;
   robotsTxtFound?: boolean;
