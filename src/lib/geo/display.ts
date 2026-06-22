@@ -76,6 +76,24 @@ export type GeoExecutionTask = {
   validation: string;
 };
 
+export type GeoTaskCenterTask = {
+  id: string;
+  title: string;
+  priority: GeoActionItem["priority"];
+  target: string;
+  goal: string;
+  action: string;
+  validation: string;
+  copyBlock: string | null;
+};
+
+export type GeoTaskCenterGroup = {
+  id: "required" | "optimization" | "validation";
+  label: string;
+  summary: string;
+  tasks: GeoTaskCenterTask[];
+};
+
 export type GeoAuditScopeProduct = {
   title: string;
   url?: string | null;
@@ -376,6 +394,84 @@ export function getGeoExecutionTasks(
       validation: item.validation,
     };
   });
+}
+
+function scopeSeverityToPriority(severity: GeoScopeGap["severity"]): GeoActionItem["priority"] {
+  if (severity === "high") return "high";
+  if (severity === "medium") return "medium";
+  return "low";
+}
+
+export function getGeoTaskCenterGroups({
+  actionItems,
+  scopeGaps,
+  validationLoopItems,
+  domain,
+}: {
+  actionItems: GeoActionItem[];
+  scopeGaps: GeoScopeGap[];
+  validationLoopItems: GeoValidationLoopItem[];
+  domain?: string | null;
+}): GeoTaskCenterGroup[] {
+  const siteDomain = normalizeDomain(domain);
+  const requiredTasks: GeoTaskCenterTask[] = scopeGaps.map((gap) => ({
+    id: `scope-${gap.id}`,
+    title: `Fix evidence gap: ${gap.label}`,
+    priority: scopeSeverityToPriority(gap.severity),
+    target: gap.label,
+    goal: gap.reason,
+    action: gap.nextStep,
+    validation: "Rerun GEO Audit and confirm this evidence item changes to found.",
+    copyBlock: null,
+  }));
+
+  const optimizationTasks: GeoTaskCenterTask[] = actionItems.slice(0, 5).map((item) => {
+    const plan = getGeoOptimizationPlan({ id: item.id });
+    return {
+      id: item.id,
+      title: item.title,
+      priority: item.priority,
+      target: item.target || siteDomain,
+      goal: item.why,
+      action: plan?.steps[0] ?? item.fix,
+      validation: item.validation,
+      copyBlock: plan?.template ?? plan?.code ?? null,
+    };
+  });
+
+  const validationTasks: GeoTaskCenterTask[] = validationLoopItems
+    .filter((item) => item.status !== "verified")
+    .map((item) => ({
+      id: `validation-${item.id}`,
+      title: `Validate: ${item.label}`,
+      priority: item.status === "blocked" ? "high" : item.status === "watching" ? "medium" : "low",
+      target: item.label,
+      goal: item.signal,
+      action: item.nextStep,
+      validation: "Refresh the related data source, then compare the next GEO Audit with the previous report.",
+      copyBlock: null,
+    }));
+
+  return [
+    {
+      id: "required",
+      label: "Must fix first",
+      summary: "Evidence and access issues that make the audit less trustworthy.",
+      tasks: requiredTasks,
+    },
+    {
+      id: "optimization",
+      label: "Optimize next",
+      summary: "Content, schema, and intent fixes that improve AI/search understanding.",
+      tasks: optimizationTasks,
+    },
+    {
+      id: "validation",
+      label: "Watch results",
+      summary: "Signals that prove whether the change is becoming visible or useful.",
+      tasks: validationTasks,
+    },
+  ];
 }
 
 export type GeoFixWorkflowAction = {

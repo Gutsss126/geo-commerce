@@ -14,6 +14,7 @@ import {
   getGeoOptimizationPlan,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
+  getGeoTaskCenterGroups,
   getGeoValidationLoopItems,
 } from "@/lib/geo/display";
 import type {
@@ -593,6 +594,93 @@ function ExecutionTasksCard({ actionItems, domain }: { actionItems: GeoActionIte
   );
 }
 
+function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenterGroups> }) {
+  const allTasks = groups.flatMap((group) => group.tasks.map((task) => ({ ...task, groupLabel: group.label })));
+  const topTasks = allTasks.slice(0, 3);
+  if (allTasks.length === 0) return null;
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>Task center</CardTitle>
+          <CardDescription>Only the next 3 actions are shown first. Details stay folded so the page remains easy to scan.</CardDescription>
+        </div>
+        <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-200">
+          {allTasks.length} tasks
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        {topTasks.map((task, index) => (
+          <div key={`${task.id}-${task.title}`} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-medium text-blue-300">Task {index + 1} · {task.groupLabel}</p>
+              <PriorityPill priority={task.priority} />
+            </div>
+            <p className="mt-2 font-medium text-slate-100">{task.title}</p>
+            <p className="mt-1 text-xs text-slate-500">{task.target}</p>
+            <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
+              <p>
+                <span className="text-slate-300">Goal: </span>
+                {task.goal}
+              </p>
+              <p>
+                <span className="text-slate-300">Action: </span>
+                {task.action}
+              </p>
+              <p>
+                <span className="text-slate-300">Verify: </span>
+                {task.validation}
+              </p>
+            </div>
+            {task.copyBlock && (
+              <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/70 p-3">
+                <summary className="cursor-pointer text-xs font-medium text-emerald-200">Copy block</summary>
+                <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{task.copyBlock}</pre>
+              </details>
+            )}
+          </div>
+        ))}
+      </div>
+      <details className="mt-4 rounded-lg border border-[var(--border)] bg-slate-950/30 p-4">
+        <summary className="cursor-pointer text-sm font-medium text-slate-200">View grouped task backlog</summary>
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {groups.map((group) => (
+            <div key={group.id} className="rounded-lg border border-[var(--border)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-slate-100">{group.label}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{group.summary}</p>
+                </div>
+                <span className="rounded border border-slate-600/70 px-2 py-0.5 text-xs text-slate-300">
+                  {group.tasks.length}
+                </span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {group.tasks.length > 0 ? (
+                  group.tasks.map((task) => (
+                    <div key={task.id} className="rounded border border-[var(--border)] bg-slate-950/50 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-slate-200">{task.title}</p>
+                        <PriorityPill priority={task.priority} />
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">{task.action}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-200">
+                    No open tasks in this group.
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </details>
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
@@ -627,6 +715,12 @@ export default async function GeoAuditV2Page() {
     current: report,
     previous: previousReport,
     scopeGaps,
+  });
+  const taskCenterGroups = getGeoTaskCenterGroups({
+    actionItems,
+    scopeGaps,
+    validationLoopItems,
+    domain: primarySite?.domain,
   });
 
   return (
@@ -695,7 +789,7 @@ export default async function GeoAuditV2Page() {
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
       <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />
-      <ExecutionTasksCard actionItems={topActions} domain={primarySite?.domain} />
+      <TaskCenterCard groups={taskCenterGroups} />
 
       {scopeItems.length > 0 && (
         <Card>

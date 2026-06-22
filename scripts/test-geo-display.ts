@@ -3,6 +3,7 @@ import {
   formatGeoScoreGap,
   formatGeoAuditDelta,
   getGeoExecutionTasks,
+  getGeoTaskCenterGroups,
   getGeoAuditScopeItems,
   getGeoScopeGaps,
   getGeoValidationLoopItems,
@@ -186,6 +187,56 @@ assert.equal(executionTasks[0].title, "SEO Title");
 assert.ok(executionTasks[0].copyBlock?.includes("title"));
 assert.ok(executionTasks[1].copyBlock?.includes("FAQ"));
 assert.equal(executionTasks[2].copyBlock, null);
+
+const taskCenterGroups = getGeoTaskCenterGroups({
+  actionItems: [
+    {
+      id: "seo-title-description",
+      priority: "high",
+      title: "SEO Title",
+      target: "fancrafti.com",
+      why: "Missing title/meta",
+      fix: "Add title/meta",
+      validation: "Run audit again",
+    },
+    {
+      id: "measurement-readiness",
+      priority: "medium",
+      title: "GA4 events",
+      target: "fancrafti.com/tiktok",
+      why: "Need behavior events",
+      fix: "Add events",
+      validation: "Refresh GA4",
+    },
+  ],
+  scopeGaps: [
+    {
+      id: "crawl-files",
+      label: "Crawl files",
+      severity: "high",
+      reason: "sitemap missing",
+      nextStep: "Publish sitemap.xml",
+    },
+  ],
+  validationLoopItems: [
+    {
+      id: "traffic",
+      label: "Traffic validation",
+      status: "watching",
+      signal: "GA4 is connected",
+      nextStep: "Compare sessions after 7 days",
+    },
+  ],
+  domain: "fancrafti.com",
+});
+assert.deepEqual(
+  taskCenterGroups.map((group) => group.id),
+  ["required", "optimization", "validation"]
+);
+assert.equal(taskCenterGroups[0].tasks[0].id, "scope-crawl-files");
+assert.equal(taskCenterGroups[1].tasks[0].id, "seo-title-description");
+assert.equal(taskCenterGroups[2].tasks[0].id, "validation-traffic");
+assert.ok(taskCenterGroups.flatMap((group) => group.tasks).slice(0, 3).some((task) => task.title.includes("Crawl files")));
 
 const scopeItems = getGeoAuditScopeItems({
   domain: "fancrafti.com",
