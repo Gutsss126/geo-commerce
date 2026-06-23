@@ -668,6 +668,9 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
             </div>
             <p className="mt-2 font-medium text-slate-100">{task.title}</p>
             <p className="mt-1 text-xs text-slate-500">{task.target}</p>
+            <p className="mt-3 rounded border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs leading-5 text-blue-100">
+              {task.explanation}
+            </p>
             <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
               <p>
                 <span className="text-slate-300">目标：</span>
@@ -682,6 +685,19 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
                 {task.validation}
               </p>
             </div>
+            <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+              <summary className="cursor-pointer text-xs font-medium text-slate-200">查看来源和影响</summary>
+              <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
+                <p>
+                  <span className="text-slate-300">来源：</span>
+                  {task.source}
+                </p>
+                <p>
+                  <span className="text-slate-300">影响：</span>
+                  {task.impact}
+                </p>
+              </div>
+            </details>
             {task.copyBlock && (
               <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/70 p-3">
                 <summary className="cursor-pointer text-xs font-medium text-emerald-200">可复制内容</summary>
@@ -714,6 +730,7 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
                         <PriorityPill priority={task.priority} />
                       </div>
                       <p className="mt-2 text-xs leading-5 text-slate-400">{task.action}</p>
+                      <p className="mt-2 text-xs leading-5 text-slate-500">{task.explanation}</p>
                     </div>
                   ))
                 ) : (

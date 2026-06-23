@@ -238,6 +238,10 @@ assert.equal(taskCenterGroups[0].tasks[0].id, "scope-crawl-files");
 assert.equal(taskCenterGroups[1].tasks[0].id, "seo-title-description");
 assert.equal(taskCenterGroups[2].tasks[0].id, "validation-traffic");
 assert.ok(taskCenterGroups.flatMap((group) => group.tasks).slice(0, 3).some((task) => task.title.includes("Crawl files")));
+assert.equal(taskCenterGroups[0].tasks[0].source, "检查范围 / 证据缺口");
+assert.ok(taskCenterGroups[1].tasks[0].source.includes("Page source"));
+assert.ok(taskCenterGroups[1].tasks[0].impact.includes("搜索"));
+assert.ok(taskCenterGroups[2].tasks[0].explanation.includes("验证层"));
 
 const statusSummary = getGeoAuditStatusSummary({
   scopeItems: [

@@ -81,6 +81,9 @@ export type GeoTaskCenterTask = {
   title: string;
   priority: GeoActionItem["priority"];
   target: string;
+  source: string;
+  impact: string;
+  explanation: string;
   goal: string;
   action: string;
   validation: string;
@@ -410,6 +413,40 @@ function scopeSeverityToPriority(severity: GeoScopeGap["severity"]): GeoActionIt
   return "low";
 }
 
+function getGeoTaskImpact(id: string) {
+  const impactById: Record<string, string> = {
+    "brand-entity": "影响 AI 是否能把品牌、官网和商品识别为同一个实体。",
+    "offer-clarity": "影响用户和 AI 是否能快速理解你卖什么、适合谁、为什么值得买。",
+    "audience-fit": "影响页面是否能匹配真实购买场景和目标用户。",
+    "long-tail-intent": "影响长尾搜索和 AI 问答场景中是否容易被推荐。",
+    "product-schema-readiness": "影响商品价格、库存、评价和可购买性是否能被机器读取。",
+    "price-trust": "影响用户购买信任，也影响 AI 判断商品信息是否完整。",
+    "policy-clarity": "影响配送、退货和信任信息是否足够清楚。",
+    "measurement-readiness": "影响优化后是否能用 GA4 验证访问、点击、加购和结账行为。",
+    "llms-txt": "影响 AI 爬虫是否能快速理解站点结构和优先页面。",
+    "seo-title-description": "影响搜索结果和 AI 摘要能否提取清晰页面主题。",
+    "canonical-url": "影响搜索系统是否能判断哪个页面是标准版本。",
+    "internal-link-entry": "影响搜索和 AI 是否能从站内入口发现重点页面。",
+    "external-search-data": "影响是否能用真实搜索曝光和点击验证优化效果。",
+  };
+
+  return impactById[id] ?? "影响 AI、搜索或用户是否能稳定理解并验证这个页面。";
+}
+
+function getGeoTaskExplanation(id: string) {
+  const explanationById: Record<string, string> = {
+    "measurement-readiness": "这个问题来自行为验证闭环：页面可能能被看到，但还需要确认用户动作能被记录。",
+    "product-schema-readiness": "这个问题来自商品机器可读性：商品页需要让系统读懂价格、库存、评价和购买状态。",
+    "policy-clarity": "这个问题来自信任信息：配送、退货、联系和品牌说明会影响购买信心。",
+    "llms-txt": "这个问题来自 AI 爬虫说明：它帮助 AI 更快知道应该优先读取哪些页面。",
+    "seo-title-description": "这个问题来自页面源码：标题和描述是搜索与 AI 摘要最先读取的信号。",
+    "canonical-url": "这个问题来自页面源码：标准链接能减少重复页面造成的判断混乱。",
+    "internal-link-entry": "这个问题来自站内路径：重点页面需要能从首页或导航自然进入。",
+  };
+
+  return explanationById[id] ?? "这个任务来自本次 GEO Audit 的证据与评分结果，优先处理可以提升诊断可信度。";
+}
+
 export function getGeoTaskCenterGroups({
   actionItems,
   scopeGaps,
@@ -427,6 +464,9 @@ export function getGeoTaskCenterGroups({
     title: `补齐检查证据：${gap.label}`,
     priority: scopeSeverityToPriority(gap.severity),
     target: gap.label,
+    source: "检查范围 / 证据缺口",
+    impact: "影响本次诊断是否可信；证据不足时，不宜直接判断优化效果。",
+    explanation: "这个任务来自检查范围缺口，先补齐证据，再看分数更稳。",
     goal: gap.reason,
     action: gap.nextStep,
     validation: "重新运行 GEO Audit，确认这个证据项变成已发现。",
@@ -440,6 +480,9 @@ export function getGeoTaskCenterGroups({
       title: item.title,
       priority: item.priority,
       target: item.target || siteDomain,
+      source: getGeoCheckSourceLabel({ id: item.id }),
+      impact: getGeoTaskImpact(item.id),
+      explanation: getGeoTaskExplanation(item.id),
       goal: item.why,
       action: plan?.steps[0] ?? item.fix,
       validation: item.validation,
@@ -454,6 +497,9 @@ export function getGeoTaskCenterGroups({
       title: `验证效果：${item.label}`,
       priority: item.status === "blocked" ? "high" : item.status === "watching" ? "medium" : "low",
       target: item.label,
+      source: "GEO 验证闭环",
+      impact: "影响你能否判断优化是真的有效，而不只是页面分数变好。",
+      explanation: "这个任务来自验证层状态，用来确认优化是否变成可见的数据变化。",
       goal: item.signal,
       action: item.nextStep,
       validation: "刷新相关数据源，再对比下一次 GEO Audit 和上一次报告。",
