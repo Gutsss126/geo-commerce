@@ -503,12 +503,28 @@ function PageExperienceCard({ report, landingPath }: { report?: PageExperienceRe
   );
 }
 
+function formatAuditTime(value?: Date | string | null) {
+  if (!value) return "暂无";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function AuditDeltaCard({
   current,
   previous,
+  auditCount,
+  currentCreatedAt,
+  previousCreatedAt,
 }: {
   current: GeoAuditReport | null;
   previous: GeoAuditReport | null;
+  auditCount: number;
+  currentCreatedAt?: Date | null;
+  previousCreatedAt?: Date | null;
 }) {
   if (!current) return null;
   const delta = formatGeoAuditDelta(current, previous);
@@ -529,34 +545,43 @@ function AuditDeltaCard({
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <CardTitle>本次 vs 上次</CardTitle>
-          <CardDescription>只看最近两次站点审计，帮助判断修改是否真的带来变化。</CardDescription>
+          <CardTitle>最近审计对比</CardTitle>
+          <CardDescription>
+            已保存 {auditCount} 次站点审计；本次 {formatAuditTime(currentCreatedAt)}
+            {previousCreatedAt ? `，上次 ${formatAuditTime(previousCreatedAt)}` : "，等待下一次形成趋势。"}
+          </CardDescription>
         </div>
         <span className={`rounded border px-2 py-1 text-xs font-medium ${styles[delta.status]}`}>
           {label[delta.status]}
         </span>
       </div>
       <p className="mt-4 text-sm text-slate-300">{delta.summary}</p>
-      {delta.status !== "new" && (
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
-            <p className="text-xs text-slate-500">总分变化</p>
-            <p className="mt-1 text-lg font-semibold text-slate-100">{delta.scoreDelta > 0 ? `+${delta.scoreDelta}` : delta.scoreDelta}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
-            <p className="text-xs text-slate-500">通过项</p>
-            <p className="mt-1 text-lg font-semibold text-emerald-300">{delta.passDelta > 0 ? `+${delta.passDelta}` : delta.passDelta}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
-            <p className="text-xs text-slate-500">待加强</p>
-            <p className="mt-1 text-lg font-semibold text-amber-300">{delta.warnDelta > 0 ? `+${delta.warnDelta}` : delta.warnDelta}</p>
-          </div>
-          <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
-            <p className="text-xs text-slate-500">需处理</p>
-            <p className="mt-1 text-lg font-semibold text-rose-300">{delta.failDelta > 0 ? `+${delta.failDelta}` : delta.failDelta}</p>
-          </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs text-slate-500">本次分数</p>
+          <p className="mt-1 text-lg font-semibold text-slate-100">{delta.currentScore}</p>
         </div>
-      )}
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs text-slate-500">上次分数</p>
+          <p className="mt-1 text-lg font-semibold text-slate-100">
+            {delta.previousScore === null ? "暂无" : delta.previousScore}
+          </p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs text-slate-500">通过项</p>
+          <p className="mt-1 text-lg font-semibold text-emerald-300">
+            {delta.currentPassCount}
+            {delta.status !== "new" && <span className="ml-2 text-xs text-slate-500">({delta.passDelta > 0 ? `+${delta.passDelta}` : delta.passDelta})</span>}
+          </p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs text-slate-500">需处理</p>
+          <p className="mt-1 text-lg font-semibold text-rose-300">
+            {delta.currentFailCount}
+            {delta.status !== "new" && <span className="ml-2 text-xs text-slate-500">({delta.failDelta > 0 ? `+${delta.failDelta}` : delta.failDelta})</span>}
+          </p>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -885,7 +910,13 @@ export default async function GeoAuditV2Page() {
         </Card>
       </div>
 
-      <AuditDeltaCard current={report} previous={previousReport} />
+      <AuditDeltaCard
+        current={report}
+        previous={previousReport}
+        auditCount={primarySite?._count.audits ?? 0}
+        currentCreatedAt={latestAudit?.createdAt}
+        previousCreatedAt={previousAudit?.createdAt}
+      />
       <AuditStatusSummaryCard items={statusSummary} />
       <ValidationLoopCard items={validationLoopItems} />
       <StrategyReadinessCard />

@@ -8,6 +8,12 @@ export function formatGeoScoreGap(check: Pick<GeoCheckResult, "score" | "maxScor
 
 export type GeoAuditDelta = {
   status: "new" | "improved" | "declined" | "flat";
+  currentScore: number;
+  previousScore: number | null;
+  currentPassCount: number;
+  previousPassCount: number | null;
+  currentFailCount: number;
+  previousFailCount: number | null;
   scoreDelta: number;
   passDelta: number;
   warnDelta: number;
@@ -28,9 +34,18 @@ export function formatGeoAuditDelta(
   current: Pick<GeoAuditReport, "overallScore" | "checks">,
   previous: Pick<GeoAuditReport, "overallScore" | "checks"> | null | undefined
 ): GeoAuditDelta {
+  const currentPassCount = countStatus(current, "pass");
+  const currentFailCount = countStatus(current, "fail");
+
   if (!previous) {
     return {
       status: "new",
+      currentScore: current.overallScore,
+      previousScore: null,
+      currentPassCount,
+      previousPassCount: null,
+      currentFailCount,
+      previousFailCount: null,
       scoreDelta: 0,
       passDelta: 0,
       warnDelta: 0,
@@ -40,9 +55,11 @@ export function formatGeoAuditDelta(
   }
 
   const scoreDelta = current.overallScore - previous.overallScore;
-  const passDelta = countStatus(current, "pass") - countStatus(previous, "pass");
+  const previousPassCount = countStatus(previous, "pass");
+  const previousFailCount = countStatus(previous, "fail");
+  const passDelta = currentPassCount - previousPassCount;
   const warnDelta = countStatus(current, "warn") - countStatus(previous, "warn");
-  const failDelta = countStatus(current, "fail") - countStatus(previous, "fail");
+  const failDelta = currentFailCount - previousFailCount;
   const status = scoreDelta >= 3 ? "improved" : scoreDelta <= -3 ? "declined" : "flat";
   const summary =
     status === "improved"
@@ -51,7 +68,20 @@ export function formatGeoAuditDelta(
         ? `比上次下降 ${Math.abs(scoreDelta)} 分，请优先查看新增的需处理项。`
         : `与上次基本持平，通过项 ${signedNumber(passDelta)}，需处理项 ${signedNumber(failDelta)}。`;
 
-  return { status, scoreDelta, passDelta, warnDelta, failDelta, summary };
+  return {
+    status,
+    currentScore: current.overallScore,
+    previousScore: previous.overallScore,
+    currentPassCount,
+    previousPassCount,
+    currentFailCount,
+    previousFailCount,
+    scoreDelta,
+    passDelta,
+    warnDelta,
+    failDelta,
+    summary,
+  };
 }
 
 export type GeoOptimizationPlan = {

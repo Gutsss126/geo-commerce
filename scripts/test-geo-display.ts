@@ -134,6 +134,12 @@ const auditDelta = formatGeoAuditDelta(
   }
 );
 assert.equal(auditDelta.scoreDelta, 8);
+assert.equal(auditDelta.currentScore, 82);
+assert.equal(auditDelta.previousScore, 74);
+assert.equal(auditDelta.currentPassCount, 1);
+assert.equal(auditDelta.previousPassCount, 1);
+assert.equal(auditDelta.currentFailCount, 1);
+assert.equal(auditDelta.previousFailCount, 2);
 assert.equal(auditDelta.passDelta, 0);
 assert.equal(auditDelta.warnDelta, 1);
 assert.equal(auditDelta.failDelta, -1);
@@ -148,6 +154,8 @@ const firstAuditDelta = formatGeoAuditDelta(
   null
 );
 assert.equal(firstAuditDelta.status, "new");
+assert.equal(firstAuditDelta.currentScore, 70);
+assert.equal(firstAuditDelta.previousScore, null);
 assert.equal(firstAuditDelta.summary, "这是第一份可对比的 GEO Audit 报告。");
 
 
