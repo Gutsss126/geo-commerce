@@ -5,6 +5,7 @@ import {
   getGeoExecutionTasks,
   getGeoTaskCenterGroups,
   getGeoAuditStatusSummary,
+  getGeoReviewSteps,
   getGeoAuditScopeItems,
   getGeoScopeGaps,
   getGeoValidationLoopItems,
@@ -281,6 +282,14 @@ assert.equal(statusSummary.length, 4);
 assert.equal(statusSummary[0].value, "2/3");
 assert.equal(statusSummary[1].value, "1");
 assert.equal(statusSummary[3].tone, "fail");
+
+const reviewSteps = getGeoReviewSteps();
+assert.equal(reviewSteps.length, 3);
+assert.deepEqual(
+  reviewSteps.map((step) => step.id),
+  ["publish", "rerun", "compare"]
+);
+assert.ok(reviewSteps[1].action.includes("GEO Audit"));
 
 const scopeItems = getGeoAuditScopeItems({
   domain: "fancrafti.com",

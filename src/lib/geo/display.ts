@@ -105,6 +105,13 @@ export type GeoAuditStatusSummaryItem = {
   detail: string;
 };
 
+export type GeoReviewStep = {
+  id: "publish" | "rerun" | "compare";
+  label: string;
+  action: string;
+  check: string;
+};
+
 export type GeoAuditScopeProduct = {
   title: string;
   url?: string | null;
@@ -577,6 +584,29 @@ export function getGeoAuditStatusSummary({
       value: String(blockedValidationCount),
       tone: blockedValidationCount > 0 ? "fail" : "pass",
       detail: "验证闭环中仍然卡住的层级。",
+    },
+  ];
+}
+
+export function getGeoReviewSteps(): GeoReviewStep[] {
+  return [
+    {
+      id: "publish",
+      label: "1. 发布修改",
+      action: "先把页面内容、Schema、GA4 事件或站点文件发布到线上。",
+      check: "用无痕窗口打开目标页面，确认用户看到的是新版本。",
+    },
+    {
+      id: "rerun",
+      label: "2. 重新检查",
+      action: "回到 GEO Audit，重新运行 GEO Audit 生成新报告。",
+      check: "优先看检查覆盖、硬缺口和任务中心是否发生变化。",
+    },
+    {
+      id: "compare",
+      label: "3. 对比变化",
+      action: "对比本次 vs 上次，再结合 GA4 或后续 Search Console 数据观察效果。",
+      check: "如果分数没变，先看证据是否读到；证据已读到再判断内容是否需要继续改。",
     },
   ];
 }

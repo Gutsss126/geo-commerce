@@ -13,6 +13,7 @@ import {
   getGeoExecutionTasks,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
+  getGeoReviewSteps,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
   getGeoTaskCenterGroups,
@@ -747,6 +748,33 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
   );
 }
 
+function ReviewStepsCard({ steps }: { steps: ReturnType<typeof getGeoReviewSteps> }) {
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>复查指引</CardTitle>
+          <CardDescription>任务做完后按这 3 步确认变化，避免只看一次分数就下结论。</CardDescription>
+        </div>
+        <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">
+          Review loop
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        {steps.map((step) => (
+          <div key={step.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <p className="font-medium text-slate-100">{step.label}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">{step.action}</p>
+            <p className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3 text-xs leading-5 text-slate-500">
+              {step.check}
+            </p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
@@ -794,6 +822,7 @@ export default async function GeoAuditV2Page() {
     actionItems,
     validationLoopItems,
   });
+  const reviewSteps = getGeoReviewSteps();
 
   return (
     <div className="space-y-6">
@@ -863,6 +892,7 @@ export default async function GeoAuditV2Page() {
       <SeoBasicsCard checks={checks} />
       <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />
       <TaskCenterCard groups={taskCenterGroups} />
+      <ReviewStepsCard steps={reviewSteps} />
 
       {scopeItems.length > 0 && (
         <Card>
