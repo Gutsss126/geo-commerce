@@ -862,7 +862,7 @@ export default async function GeoAuditV2Page() {
         </Card>
       )}
 
-      <Card>
+      <Card className="hidden">
         <CardTitle>优先行动清单</CardTitle>
         <CardDescription>只展示最该先做的 3 个问题，避免把运营拖进一长串技术清单。</CardDescription>
         <div className="mt-4 space-y-3">
