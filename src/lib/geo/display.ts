@@ -416,12 +416,12 @@ export function getGeoTaskCenterGroups({
   const siteDomain = normalizeDomain(domain);
   const requiredTasks: GeoTaskCenterTask[] = scopeGaps.map((gap) => ({
     id: `scope-${gap.id}`,
-    title: `Fix evidence gap: ${gap.label}`,
+    title: `补齐检查证据：${gap.label}`,
     priority: scopeSeverityToPriority(gap.severity),
     target: gap.label,
     goal: gap.reason,
     action: gap.nextStep,
-    validation: "Rerun GEO Audit and confirm this evidence item changes to found.",
+    validation: "重新运行 GEO Audit，确认这个证据项变成已发现。",
     copyBlock: null,
   }));
 
@@ -443,32 +443,32 @@ export function getGeoTaskCenterGroups({
     .filter((item) => item.status !== "verified")
     .map((item) => ({
       id: `validation-${item.id}`,
-      title: `Validate: ${item.label}`,
+      title: `验证效果：${item.label}`,
       priority: item.status === "blocked" ? "high" : item.status === "watching" ? "medium" : "low",
       target: item.label,
       goal: item.signal,
       action: item.nextStep,
-      validation: "Refresh the related data source, then compare the next GEO Audit with the previous report.",
+      validation: "刷新相关数据源，再对比下一次 GEO Audit 和上一次报告。",
       copyBlock: null,
     }));
 
   return [
     {
       id: "required",
-      label: "Must fix first",
-      summary: "Evidence and access issues that make the audit less trustworthy.",
+      label: "必须先修",
+      summary: "先处理会影响检查可信度的证据和访问问题。",
       tasks: requiredTasks,
     },
     {
       id: "optimization",
-      label: "Optimize next",
-      summary: "Content, schema, and intent fixes that improve AI/search understanding.",
+      label: "继续优化",
+      summary: "再处理内容、Schema 和用户意图，让 AI 与搜索更容易理解。",
       tasks: optimizationTasks,
     },
     {
       id: "validation",
-      label: "Watch results",
-      summary: "Signals that prove whether the change is becoming visible or useful.",
+      label: "观察结果",
+      summary: "最后看数据变化，判断优化是否真的变得可见、可用。",
       tasks: validationTasks,
     },
   ];

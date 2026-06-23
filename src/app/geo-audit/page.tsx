@@ -603,8 +603,8 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <CardTitle>Task center</CardTitle>
-          <CardDescription>Only the next 3 actions are shown first. Details stay folded so the page remains easy to scan.</CardDescription>
+          <CardTitle>任务中心</CardTitle>
+          <CardDescription>默认只显示接下来最重要的 3 个动作，其它内容折叠，方便快速判断下一步。</CardDescription>
         </div>
         <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-200">
           {allTasks.length} tasks
@@ -614,28 +614,28 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
         {topTasks.map((task, index) => (
           <div key={`${task.id}-${task.title}`} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-medium text-blue-300">Task {index + 1} · {task.groupLabel}</p>
+              <p className="text-xs font-medium text-blue-300">任务 {index + 1} · {task.groupLabel}</p>
               <PriorityPill priority={task.priority} />
             </div>
             <p className="mt-2 font-medium text-slate-100">{task.title}</p>
             <p className="mt-1 text-xs text-slate-500">{task.target}</p>
             <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
               <p>
-                <span className="text-slate-300">Goal: </span>
+                <span className="text-slate-300">目标：</span>
                 {task.goal}
               </p>
               <p>
-                <span className="text-slate-300">Action: </span>
+                <span className="text-slate-300">动作：</span>
                 {task.action}
               </p>
               <p>
-                <span className="text-slate-300">Verify: </span>
+                <span className="text-slate-300">验证：</span>
                 {task.validation}
               </p>
             </div>
             {task.copyBlock && (
               <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/70 p-3">
-                <summary className="cursor-pointer text-xs font-medium text-emerald-200">Copy block</summary>
+                <summary className="cursor-pointer text-xs font-medium text-emerald-200">可复制内容</summary>
                 <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{task.copyBlock}</pre>
               </details>
             )}
@@ -643,7 +643,7 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
         ))}
       </div>
       <details className="mt-4 rounded-lg border border-[var(--border)] bg-slate-950/30 p-4">
-        <summary className="cursor-pointer text-sm font-medium text-slate-200">View grouped task backlog</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-200">查看分组任务池</summary>
         <div className="mt-4 grid gap-3 lg:grid-cols-3">
           {groups.map((group) => (
             <div key={group.id} className="rounded-lg border border-[var(--border)] p-4">
@@ -669,7 +669,7 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
                   ))
                 ) : (
                   <p className="rounded border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-200">
-                    No open tasks in this group.
+                    这一组暂无待处理任务。
                   </p>
                 )}
               </div>
