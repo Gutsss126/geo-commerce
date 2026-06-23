@@ -4,6 +4,7 @@ import {
   formatGeoAuditDelta,
   getGeoExecutionTasks,
   getGeoTaskCenterGroups,
+  getGeoAuditStatusSummary,
   getGeoAuditScopeItems,
   getGeoScopeGaps,
   getGeoValidationLoopItems,
@@ -237,6 +238,45 @@ assert.equal(taskCenterGroups[0].tasks[0].id, "scope-crawl-files");
 assert.equal(taskCenterGroups[1].tasks[0].id, "seo-title-description");
 assert.equal(taskCenterGroups[2].tasks[0].id, "validation-traffic");
 assert.ok(taskCenterGroups.flatMap((group) => group.tasks).slice(0, 3).some((task) => task.title.includes("Crawl files")));
+
+const statusSummary = getGeoAuditStatusSummary({
+  scopeItems: [
+    { id: "homepage", label: "Homepage", source: "/", status: "found", detail: "ok" },
+    { id: "landing-page", label: "Landing page", source: "/tiktok/", status: "found", detail: "ok" },
+    { id: "crawl-files", label: "Crawl files", source: "/sitemap.xml", status: "missing", detail: "missing" },
+  ],
+  scopeGaps: taskCenterGroups[0].tasks.map((task) => ({
+    id: "crawl-files",
+    label: task.title,
+    severity: task.priority === "high" ? "high" : "medium",
+    reason: task.goal,
+    nextStep: task.action,
+  })),
+  actionItems: [
+    {
+      id: "seo-title-description",
+      priority: "high",
+      title: "SEO Title",
+      target: "fancrafti.com",
+      why: "Missing title/meta",
+      fix: "Add title/meta",
+      validation: "Run audit again",
+    },
+  ],
+  validationLoopItems: [
+    {
+      id: "technical",
+      label: "Technical",
+      status: "blocked",
+      signal: "Evidence missing",
+      nextStep: "Fix evidence",
+    },
+  ],
+});
+assert.equal(statusSummary.length, 4);
+assert.equal(statusSummary[0].value, "2/3");
+assert.equal(statusSummary[1].value, "1");
+assert.equal(statusSummary[3].tone, "fail");
 
 const scopeItems = getGeoAuditScopeItems({
   domain: "fancrafti.com",

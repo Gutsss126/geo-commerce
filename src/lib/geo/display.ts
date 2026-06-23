@@ -94,6 +94,14 @@ export type GeoTaskCenterGroup = {
   tasks: GeoTaskCenterTask[];
 };
 
+export type GeoAuditStatusSummaryItem = {
+  id: "coverage" | "required" | "actions" | "validation";
+  label: string;
+  value: string;
+  tone: "pass" | "warn" | "fail" | "info";
+  detail: string;
+};
+
 export type GeoAuditScopeProduct = {
   title: string;
   url?: string | null;
@@ -470,6 +478,59 @@ export function getGeoTaskCenterGroups({
       label: "观察结果",
       summary: "最后看数据变化，判断优化是否真的变得可见、可用。",
       tasks: validationTasks,
+    },
+  ];
+}
+
+export function getGeoAuditStatusSummary({
+  scopeItems,
+  scopeGaps,
+  actionItems,
+  validationLoopItems,
+}: {
+  scopeItems: GeoAuditScopeItem[];
+  scopeGaps: GeoScopeGap[];
+  actionItems: GeoActionItem[];
+  validationLoopItems: GeoValidationLoopItem[];
+}): GeoAuditStatusSummaryItem[] {
+  const foundScopeCount = scopeItems.filter((item) => item.status === "found").length;
+  const highGapCount = scopeGaps.filter((gap) => gap.severity === "high").length;
+  const highActionCount = actionItems.filter((item) => item.priority === "high").length;
+  const blockedValidationCount = validationLoopItems.filter((item) => item.status === "blocked").length;
+
+  return [
+    {
+      id: "coverage",
+      label: "检查覆盖",
+      value: `${foundScopeCount}/${scopeItems.length}`,
+      tone:
+        foundScopeCount === scopeItems.length
+          ? "pass"
+          : foundScopeCount >= Math.ceil(scopeItems.length / 2)
+            ? "warn"
+            : "fail",
+      detail: "已确认读取到的页面、文件和数据源数量。",
+    },
+    {
+      id: "required",
+      label: "硬缺口",
+      value: String(highGapCount),
+      tone: highGapCount > 0 ? "fail" : scopeGaps.length > 0 ? "warn" : "pass",
+      detail: "优先处理会影响诊断可信度的问题。",
+    },
+    {
+      id: "actions",
+      label: "高优先任务",
+      value: String(highActionCount),
+      tone: highActionCount > 0 ? "warn" : "pass",
+      detail: "当前建议中最应该先执行的优化动作。",
+    },
+    {
+      id: "validation",
+      label: "验证阻塞",
+      value: String(blockedValidationCount),
+      tone: blockedValidationCount > 0 ? "fail" : "pass",
+      detail: "验证闭环中仍然卡住的层级。",
     },
   ];
 }

@@ -7,6 +7,7 @@ import { ScoreBadge } from "@/components/score-badge";
 import {
   formatGeoAuditDelta,
   formatGeoScoreGap,
+  getGeoAuditStatusSummary,
   getGeoAuditScopeItems,
   getGeoCheckSourceLabel,
   getGeoExecutionTasks,
@@ -109,6 +110,22 @@ function ValidationStatusPill({ status }: { status: "verified" | "watching" | "b
     not_connected: "待接入",
   };
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function SummaryTonePill({ tone }: { tone: "pass" | "warn" | "fail" | "info" }) {
+  const styles = {
+    pass: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    warn: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    fail: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+    info: "border-blue-500/40 bg-blue-500/10 text-blue-300",
+  };
+  const labels = {
+    pass: "正常",
+    warn: "待加强",
+    fail: "需处理",
+    info: "观察",
+  };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[tone]}`}>{labels[tone]}</span>;
 }
 
 function SectionCard({ section }: { section: GeoAuditSection }) {
@@ -543,6 +560,38 @@ function AuditDeltaCard({
   );
 }
 
+function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
+  if (items.length === 0) return null;
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>本次诊断状态</CardTitle>
+          <CardDescription>先看检查是否可信，再看分数和优化建议。</CardDescription>
+        </div>
+        <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">
+          Snapshot
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => (
+          <div key={item.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-500">{item.label}</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-100">{item.value}</p>
+              </div>
+              <SummaryTonePill tone={item.tone} />
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">{item.detail}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function ExecutionTasksCard({ actionItems, domain }: { actionItems: GeoActionItem[]; domain?: string | null }) {
   const tasks = getGeoExecutionTasks(actionItems, domain);
   if (tasks.length === 0) return null;
@@ -722,6 +771,12 @@ export default async function GeoAuditV2Page() {
     validationLoopItems,
     domain: primarySite?.domain,
   });
+  const statusSummary = getGeoAuditStatusSummary({
+    scopeItems,
+    scopeGaps,
+    actionItems,
+    validationLoopItems,
+  });
 
   return (
     <div className="space-y-6">
@@ -785,6 +840,7 @@ export default async function GeoAuditV2Page() {
       </div>
 
       <AuditDeltaCard current={report} previous={previousReport} />
+      <AuditStatusSummaryCard items={statusSummary} />
       <ValidationLoopCard items={validationLoopItems} />
       <StrategyReadinessCard />
       <SeoBasicsCard checks={checks} />
