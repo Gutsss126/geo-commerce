@@ -21,6 +21,24 @@ export type GeoAuditDelta = {
   summary: string;
 };
 
+export type GeoEffectTrackingSummary = {
+  status: "new" | "improved" | "declined" | "flat";
+  summary: string;
+  scoreDelta: number;
+  improvedChecks: GeoCheckResult[];
+  newRiskChecks: GeoCheckResult[];
+  behaviorSignal: {
+    status: "not_connected" | "watching" | "verified";
+    label: string;
+    detail: string;
+  };
+  waitWindows: Array<{
+    label: string;
+    purpose: string;
+    status: "now" | "wait" | "later";
+  }>;
+};
+
 function countStatus(report: Pick<GeoAuditReport, "checks">, status: GeoCheckResult["status"]) {
   return report.checks.filter((check) => check.status === status).length;
 }
@@ -354,6 +372,95 @@ function anyCheckFails(
   ids: string[]
 ) {
   return ids.some((id) => findCheck(report, id)?.status === "fail");
+}
+
+export function getGeoEffectTrackingSummary({
+  current,
+  previous,
+}: {
+  current: Pick<GeoAuditReport, "overallScore" | "checks"> | null | undefined;
+  previous?: Pick<GeoAuditReport, "overallScore" | "checks"> | null;
+}): GeoEffectTrackingSummary {
+  if (!current) {
+    return {
+      status: "new",
+      summary: "还没有可追踪的 GEO Audit 结果。先运行一次审计，再用后续报告判断变化。",
+      scoreDelta: 0,
+      improvedChecks: [],
+      newRiskChecks: [],
+      behaviorSignal: {
+        status: "not_connected",
+        label: "等待首次审计",
+        detail: "当前只能先建立基线，还不能判断优化效果。",
+      },
+      waitWindows: [
+        { label: "现在", purpose: "先生成第一份 GEO Audit 基线", status: "now" },
+        { label: "7 天", purpose: "有第二次审计和 GA4 数据后再比较访问/点击信号", status: "wait" },
+        { label: "28 天", purpose: "数据稳定后再判断趋势", status: "later" },
+      ],
+    };
+  }
+
+  const scoreDelta = previous ? current.overallScore - previous.overallScore : 0;
+  const status: GeoEffectTrackingSummary["status"] = !previous
+    ? "new"
+    : scoreDelta >= 3
+      ? "improved"
+      : scoreDelta <= -3
+        ? "declined"
+        : "flat";
+
+  const improvedChecks = previous
+    ? current.checks.filter((check) => check.status === "pass" && findCheck(previous, check.id)?.status !== "pass")
+    : [];
+  const newRiskChecks = previous
+    ? current.checks.filter((check) => check.status === "fail" && findCheck(previous, check.id)?.status !== "fail")
+    : [];
+
+  const measurementCheck = findCheck(current, "measurement-readiness");
+  const trafficCheck = findCheck(current, "traffic");
+  const behaviorSignal: GeoEffectTrackingSummary["behaviorSignal"] =
+    measurementCheck?.status !== "pass"
+      ? {
+          status: "not_connected",
+          label: "行为数据不足",
+          detail: "当前只能判断页面和审计分数，不能证明真实访问、点击或转化效果。",
+        }
+      : trafficCheck?.status === "pass"
+        ? {
+            status: "verified",
+            label: "已有行为信号",
+            detail: "GA4 已连接且有流量信号，可以继续观察点击、加购和结账事件。",
+          }
+        : {
+            status: "watching",
+            label: "等待行为数据",
+            detail: "GA4 已连接，但仍需要 7/14/28 天窗口观察访问和关键事件变化。",
+          };
+
+  const summary =
+    status === "new"
+      ? "这是第一次可追踪审计，先把它当作基线；下一次审计后再判断变化。"
+      : status === "improved"
+        ? `本次分数 ${signedNumber(scoreDelta)}，已有 ${improvedChecks.length} 个检查项改善；仍需确认行为数据是否支持。`
+        : status === "declined"
+          ? `本次分数 ${signedNumber(scoreDelta)}，出现 ${newRiskChecks.length} 个新增风险；先处理风险再判断效果。`
+          : `本次分数基本持平，已有 ${improvedChecks.length} 个改善项、${newRiskChecks.length} 个新增风险；继续按任务复查。`;
+
+  return {
+    status,
+    summary,
+    scoreDelta,
+    improvedChecks,
+    newRiskChecks,
+    behaviorSignal,
+    waitWindows: [
+      { label: "现在", purpose: "确认页面内容、Schema、FAQ、站点文件是否被检测到", status: "now" },
+      { label: "7 天", purpose: "观察访问、停留和主要点击是否出现信号", status: "wait" },
+      { label: "14 天", purpose: "观察加购、结账等更深行为是否有变化", status: "wait" },
+      { label: "28 天", purpose: "再判断业务趋势，避免被短期流量波动误导", status: "later" },
+    ],
+  };
 }
 
 export function getGeoValidationLoopItems({

@@ -14,6 +14,7 @@ import {
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
   getGeoStrategyReadiness,
+  getGeoEffectTrackingSummary,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -184,6 +185,47 @@ assert.equal(firstAuditDelta.currentScore, 70);
 assert.equal(firstAuditDelta.previousScore, null);
 assert.equal(firstAuditDelta.summary, "这是第一份可对比的 GEO Audit 报告。");
 
+
+const effectTracking = getGeoEffectTrackingSummary({
+  current: {
+    overallScore: 82,
+    checks: [
+      { id: "brand-entity", name: "Brand", score: 16, maxScore: 16, status: "pass", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4", score: 12, maxScore: 12, status: "pass", message: "", recommendation: "" },
+      { id: "traffic", name: "Traffic", score: 4, maxScore: 8, status: "warn", message: "sessions pending", recommendation: "" },
+      { id: "new-risk", name: "New Risk", score: 0, maxScore: 8, status: "fail", message: "", recommendation: "" },
+    ],
+  },
+  previous: {
+    overallScore: 74,
+    checks: [
+      { id: "brand-entity", name: "Brand", score: 8, maxScore: 16, status: "warn", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4", score: 4, maxScore: 12, status: "fail", message: "", recommendation: "" },
+      { id: "traffic", name: "Traffic", score: 4, maxScore: 8, status: "warn", message: "", recommendation: "" },
+      { id: "new-risk", name: "New Risk", score: 8, maxScore: 8, status: "pass", message: "", recommendation: "" },
+    ],
+  },
+});
+assert.equal(effectTracking.status, "improved");
+assert.equal(effectTracking.scoreDelta, 8);
+assert.deepEqual(
+  effectTracking.improvedChecks.map((check) => check.id),
+  ["brand-entity", "measurement-readiness"]
+);
+assert.deepEqual(
+  effectTracking.newRiskChecks.map((check) => check.id),
+  ["new-risk"]
+);
+assert.equal(effectTracking.behaviorSignal.status, "watching");
+assert.ok(effectTracking.waitWindows.some((item) => item.label === "7 天"));
+
+const firstEffectTracking = getGeoEffectTrackingSummary({
+  current: { overallScore: 70, checks: [] },
+  previous: null,
+});
+assert.equal(firstEffectTracking.status, "new");
+assert.equal(firstEffectTracking.scoreDelta, 0);
+assert.ok(firstEffectTracking.summary.includes("第一次"));
 
 const executionTasks = getGeoExecutionTasks(
   [

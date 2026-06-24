@@ -11,6 +11,7 @@ import {
   getGeoAuditScopeItems,
   getGeoCheckSourceLabel,
   getGeoExecutionTasks,
+  getGeoEffectTrackingSummary,
   getGeoFixWorkflow,
   getGeoOptimizationPlan,
   getGeoReviewSteps,
@@ -631,6 +632,70 @@ function AuditDeltaCard({
   );
 }
 
+function EffectTrackingCard({ summary }: { summary: ReturnType<typeof getGeoEffectTrackingSummary> }) {
+  const styles = {
+    new: "border-blue-500/30 bg-blue-500/5 text-blue-200",
+    improved: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    declined: "border-rose-500/30 bg-rose-500/5 text-rose-200",
+    flat: "border-slate-600/60 bg-slate-950/40 text-slate-200",
+  };
+  const labels = {
+    new: "建立基线",
+    improved: "看到改善",
+    declined: "出现风险",
+    flat: "继续观察",
+  };
+  const behaviorStyles = {
+    not_connected: "border-rose-500/30 bg-rose-500/5 text-rose-200",
+    watching: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+    verified: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+  };
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>优化效果追踪</CardTitle>
+          <CardDescription>用最近两次 GEO Audit 和 GA4 可用性判断：现在能不能说明优化有效。</CardDescription>
+        </div>
+        <span className={`rounded border px-2 py-1 text-xs font-medium ${styles[summary.status]}`}>
+          {labels[summary.status]}
+        </span>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-slate-300">{summary.summary}</p>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs text-slate-500">已改善</p>
+          <p className="mt-1 text-lg font-semibold text-emerald-300">{summary.improvedChecks.length}</p>
+          <p className="mt-1 truncate text-xs text-slate-500">
+            {summary.improvedChecks.slice(0, 2).map((check) => check.name).join(" / ") || "等待下一次对比"}
+          </p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs text-slate-500">新增风险</p>
+          <p className="mt-1 text-lg font-semibold text-rose-300">{summary.newRiskChecks.length}</p>
+          <p className="mt-1 truncate text-xs text-slate-500">
+            {summary.newRiskChecks.slice(0, 2).map((check) => check.name).join(" / ") || "暂无新增风险"}
+          </p>
+        </div>
+        <div className={`rounded-lg border p-3 ${behaviorStyles[summary.behaviorSignal.status]}`}>
+          <p className="text-xs opacity-80">行为验证</p>
+          <p className="mt-1 text-sm font-semibold">{summary.behaviorSignal.label}</p>
+          <p className="mt-1 text-xs leading-5 opacity-80">{summary.behaviorSignal.detail}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 md:grid-cols-4">
+        {summary.waitWindows.map((item) => (
+          <div key={item.label} className="rounded border border-[var(--border)] bg-slate-950/30 p-3">
+            <p className="text-sm font-medium text-slate-100">{item.label}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{item.purpose}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -913,6 +978,10 @@ export default async function GeoAuditV2Page() {
     validationLoopItems,
   });
   const reviewSteps = getGeoReviewSteps();
+  const effectTrackingSummary = getGeoEffectTrackingSummary({
+    current: report,
+    previous: previousReport,
+  });
   const detailsSummaryItems = [
     { label: "检查项", value: checks.length },
     { label: "证据缺口", value: scopeGaps.length },
@@ -992,6 +1061,7 @@ export default async function GeoAuditV2Page() {
           previousCreatedAt={previousAudit?.createdAt}
         />
       </div>
+      <EffectTrackingCard summary={effectTrackingSummary} />
       <div id="geo-audit-tasks" className="scroll-mt-4">
         <TaskCenterCard groups={taskCenterGroups} />
       </div>
