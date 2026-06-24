@@ -703,7 +703,10 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
               <PriorityPill priority={task.priority} />
             </div>
             <p className="mt-2 font-medium text-slate-100">{task.title}</p>
-            <p className="mt-1 text-xs text-slate-500">{task.target}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <p className="text-xs text-slate-500">{task.target}</p>
+              <TaskStatusPill status={task.status} />
+            </div>
             <p className="mt-3 rounded border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs leading-5 text-blue-100">
               {task.explanation}
             </p>
@@ -798,14 +801,11 @@ function ReviewStepsCard({ steps }: { steps: ReturnType<typeof getGeoReviewSteps
           Review loop
         </span>
       </div>
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+      <div className="mt-4 flex flex-col gap-2 md:flex-row">
         {steps.map((step) => (
-          <div key={step.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
-            <p className="font-medium text-slate-100">{step.label}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{step.action}</p>
-            <p className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3 text-xs leading-5 text-slate-500">
-              {step.check}
-            </p>
+          <div key={step.id} className="flex-1 rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-sm font-medium text-slate-100">{step.label}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-400">{step.action}</p>
           </div>
         ))}
       </div>
@@ -932,13 +932,25 @@ export default async function GeoAuditV2Page() {
         currentCreatedAt={latestAudit?.createdAt}
         previousCreatedAt={previousAudit?.createdAt}
       />
-      <AuditStatusSummaryCard items={statusSummary} />
-      <ValidationLoopCard items={validationLoopItems} />
-      <StrategyReadinessCard />
-      <SeoBasicsCard checks={checks} />
-      <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />
       <TaskCenterCard groups={taskCenterGroups} />
       <ReviewStepsCard steps={reviewSteps} />
+
+      <details className="rounded-xl border border-[var(--border)] bg-[var(--card)]">
+        <summary className="cursor-pointer list-none p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>详细诊断</CardTitle>
+              <CardDescription>展开后查看检查状态、证据缺口、全部检查项和商品细节。</CardDescription>
+            </div>
+            <span className="rounded border border-slate-600/70 px-2 py-1 text-xs text-slate-300">展开</span>
+          </div>
+        </summary>
+        <div className="space-y-6 border-t border-[var(--border)] p-5">
+          <AuditStatusSummaryCard items={statusSummary} />
+          <ValidationLoopCard items={validationLoopItems} />
+          <StrategyReadinessCard />
+          <SeoBasicsCard checks={checks} />
+          <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />
 
       {scopeItems.length > 0 && (
         <Card>
@@ -1058,6 +1070,8 @@ export default async function GeoAuditV2Page() {
           </ul>
         </Card>
       </div>
+        </div>
+      </details>
     </div>
   );
 }
