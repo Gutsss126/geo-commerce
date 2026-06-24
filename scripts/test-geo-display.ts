@@ -31,6 +31,11 @@ assert.ok(
   "GEO audit task center should highlight the first task as the starting point"
 );
 
+assert.ok(
+  geoAuditPageSource.includes("detailsSummaryItems"),
+  "GEO audit details section should expose compact summary metrics"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,

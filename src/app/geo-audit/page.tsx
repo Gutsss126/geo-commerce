@@ -904,6 +904,12 @@ export default async function GeoAuditV2Page() {
     validationLoopItems,
   });
   const reviewSteps = getGeoReviewSteps();
+  const detailsSummaryItems = [
+    { label: "检查项", value: checks.length },
+    { label: "证据缺口", value: scopeGaps.length },
+    { label: "已检查范围", value: scopeItems.length },
+    { label: "复查项", value: validationLoopItems.length },
+  ];
 
   return (
     <div className="space-y-6">
@@ -982,6 +988,17 @@ export default async function GeoAuditV2Page() {
       </div>
       <div id="geo-audit-review" className="scroll-mt-4">
         <ReviewStepsCard steps={reviewSteps} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-slate-950/30 p-3">
+        {detailsSummaryItems.map((item) => (
+          <span
+            key={item.label}
+            className="rounded border border-slate-600/70 bg-slate-950/40 px-2 py-1 text-xs text-slate-300"
+          >
+            {item.label}: <span className="text-slate-100">{item.value}</span>
+          </span>
+        ))}
       </div>
 
       <details id="geo-audit-details" className="scroll-mt-4 rounded-xl border border-[var(--border)] bg-[var(--card)]">
