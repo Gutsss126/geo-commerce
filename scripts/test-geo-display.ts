@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   formatGeoScoreGap,
   formatGeoAuditDelta,
@@ -14,6 +15,16 @@ import {
   getGeoOptimizationPlan,
   getGeoStrategyReadiness,
 } from "../src/lib/geo/display";
+
+const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
+
+for (const anchor of ["#geo-audit-result", "#geo-audit-tasks", "#geo-audit-review", "#geo-audit-details"]) {
+  assert.ok(geoAuditPageSource.includes(`href: "${anchor}"`), `GEO audit page should link to ${anchor}`);
+}
+
+for (const sectionId of ["geo-audit-result", "geo-audit-tasks", "geo-audit-review", "geo-audit-details"]) {
+  assert.ok(geoAuditPageSource.includes(`id="${sectionId}"`), `GEO audit page should expose ${sectionId}`);
+}
 
 assert.equal(
   formatGeoScoreGap({
