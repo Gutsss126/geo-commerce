@@ -83,6 +83,15 @@ function GeoAuditPageNav() {
   );
 }
 
+function DetailGroupLabel({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-slate-950/25 px-4 py-3">
+      <p className="text-sm font-semibold text-slate-100">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+    </div>
+  );
+}
+
 function EvidenceStatusPill({ status }: { status: GeoEvidenceItem["status"] }) {
   const styles = {
     found: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
@@ -1012,11 +1021,16 @@ export default async function GeoAuditV2Page() {
           </div>
         </summary>
         <div className="space-y-6 border-t border-[var(--border)] p-5">
+          <DetailGroupLabel title="状态与验证" description="先确认本次诊断是否可信，以及优化结果能不能被 GA4 或复查数据验证。" />
           <AuditStatusSummaryCard items={statusSummary} />
           <ValidationLoopCard items={validationLoopItems} />
+
+          <DetailGroupLabel title="基础能力" description="再看 AI 和搜索系统理解页面所需的 SEO、内容结构和页面体验基础。" />
           <StrategyReadinessCard />
           <SeoBasicsCard checks={checks} />
           <PageExperienceCard report={report?.pageExperience} landingPath={primarySite?.landingPath} />
+
+          <DetailGroupLabel title="证据范围" description="这里说明系统本次看过哪些页面和文件，以及哪些证据还不完整。" />
 
       {scopeItems.length > 0 && (
         <Card>
@@ -1064,6 +1078,8 @@ export default async function GeoAuditV2Page() {
           </div>
         </Card>
       )}
+
+          <DetailGroupLabel title="检查项与商品" description="最后查看全部检查项、核心维度和低分商品，用于逐项复核。" />
 
       {checks.length > 0 && (
         <Card>

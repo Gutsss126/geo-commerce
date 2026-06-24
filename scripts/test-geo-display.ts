@@ -36,6 +36,11 @@ assert.ok(
   "GEO audit details section should expose compact summary metrics"
 );
 
+assert.ok(
+  geoAuditPageSource.includes("DetailGroupLabel"),
+  "GEO audit details section should group expanded diagnostics for easier scanning"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,
