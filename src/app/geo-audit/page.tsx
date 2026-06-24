@@ -721,6 +721,21 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
           {allTasks.length} tasks
         </span>
       </div>
+      {topTasks[0] && (
+        <div className="mt-4 rounded-lg border border-blue-500/25 bg-blue-500/10 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-200">从这里开始</p>
+              <p className="mt-1 font-medium text-slate-100">{topTasks[0].title}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-400">{topTasks[0].action}</p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <TaskStatusPill status={topTasks[0].status} />
+              <PriorityPill priority={topTasks[0].priority} />
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {topTasks.map((task, index) => (
           <div key={`${task.id}-${task.title}`} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">

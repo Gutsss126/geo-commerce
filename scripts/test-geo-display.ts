@@ -26,6 +26,11 @@ for (const sectionId of ["geo-audit-result", "geo-audit-tasks", "geo-audit-revie
   assert.ok(geoAuditPageSource.includes(`id="${sectionId}"`), `GEO audit page should expose ${sectionId}`);
 }
 
+assert.ok(
+  geoAuditPageSource.includes("topTasks[0]"),
+  "GEO audit task center should highlight the first task as the starting point"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,
