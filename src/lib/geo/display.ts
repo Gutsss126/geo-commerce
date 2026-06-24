@@ -110,6 +110,7 @@ export type GeoTaskCenterTask = {
   id: string;
   title: string;
   priority: GeoActionItem["priority"];
+  status: "todo" | "review" | "improved";
   target: string;
   source: string;
   impact: string;
@@ -488,18 +489,32 @@ export function getGeoTaskCenterGroups({
   actionItems,
   scopeGaps,
   validationLoopItems,
+  currentReport,
+  previousReport,
   domain,
 }: {
   actionItems: GeoActionItem[];
   scopeGaps: GeoScopeGap[];
   validationLoopItems: GeoValidationLoopItem[];
+  currentReport?: Pick<GeoAuditReport, "checks"> | null;
+  previousReport?: Pick<GeoAuditReport, "checks"> | null;
   domain?: string | null;
 }): GeoTaskCenterGroup[] {
   const siteDomain = normalizeDomain(domain);
+  const getTaskStatus = (id: string): GeoTaskCenterTask["status"] => {
+    const current = findCheck(currentReport, id);
+    const previous = findCheck(previousReport, id);
+
+    if (current?.status === "pass" && previous?.status !== "pass") return "improved";
+    if (current?.status === "fail") return "todo";
+    return "review";
+  };
+
   const requiredTasks: GeoTaskCenterTask[] = scopeGaps.map((gap) => ({
     id: `scope-${gap.id}`,
     title: `补齐检查证据：${gap.label}`,
     priority: scopeSeverityToPriority(gap.severity),
+    status: "todo",
     target: gap.label,
     source: "检查范围 / 证据缺口",
     impact: "影响本次诊断是否可信；证据不足时，不宜直接判断优化效果。",
@@ -516,6 +531,7 @@ export function getGeoTaskCenterGroups({
       id: item.id,
       title: item.title,
       priority: item.priority,
+      status: getTaskStatus(item.id),
       target: item.target || siteDomain,
       source: getGeoCheckSourceLabel({ id: item.id }),
       impact: getGeoTaskImpact(item.id),
@@ -533,6 +549,7 @@ export function getGeoTaskCenterGroups({
       id: `validation-${item.id}`,
       title: `验证效果：${item.label}`,
       priority: item.status === "blocked" ? "high" : item.status === "watching" ? "medium" : "low",
+      status: item.status === "blocked" ? "todo" : "review",
       target: item.label,
       source: "GEO 验证闭环",
       impact: "影响你能否判断优化是真的有效，而不只是页面分数变好。",

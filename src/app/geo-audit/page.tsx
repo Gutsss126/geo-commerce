@@ -47,6 +47,16 @@ function PriorityPill({ priority }: { priority: GeoActionItem["priority"] }) {
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[priority]}`}>{labels[priority]}</span>;
 }
 
+function TaskStatusPill({ status }: { status: "todo" | "review" | "improved" }) {
+  const styles = {
+    todo: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+    review: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    improved: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  };
+  const labels = { todo: "待处理", review: "需复查", improved: "已改善" };
+  return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
+}
+
 function EvidenceStatusPill({ status }: { status: GeoEvidenceItem["status"] }) {
   const styles = {
     found: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
@@ -753,7 +763,10 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
                     <div key={task.id} className="rounded border border-[var(--border)] bg-slate-950/50 p-3">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium text-slate-200">{task.title}</p>
-                        <PriorityPill priority={task.priority} />
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <TaskStatusPill status={task.status} />
+                          <PriorityPill priority={task.priority} />
+                        </div>
                       </div>
                       <p className="mt-2 text-xs leading-5 text-slate-400">{task.action}</p>
                       <p className="mt-2 text-xs leading-5 text-slate-500">{task.explanation}</p>
@@ -839,6 +852,8 @@ export default async function GeoAuditV2Page() {
     actionItems,
     scopeGaps,
     validationLoopItems,
+    currentReport: report,
+    previousReport,
     domain: primarySite?.domain,
   });
   const statusSummary = getGeoAuditStatusSummary({

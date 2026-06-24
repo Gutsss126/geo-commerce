@@ -237,6 +237,18 @@ const taskCenterGroups = getGeoTaskCenterGroups({
       nextStep: "Compare sessions after 7 days",
     },
   ],
+  currentReport: {
+    checks: [
+      { id: "seo-title-description", name: "SEO Title", score: 10, maxScore: 10, status: "pass", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4 events", score: 5, maxScore: 10, status: "warn", message: "", recommendation: "" },
+    ],
+  },
+  previousReport: {
+    checks: [
+      { id: "seo-title-description", name: "SEO Title", score: 4, maxScore: 10, status: "fail", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4 events", score: 5, maxScore: 10, status: "warn", message: "", recommendation: "" },
+    ],
+  },
   domain: "fancrafti.com",
 });
 assert.deepEqual(
@@ -246,6 +258,9 @@ assert.deepEqual(
 assert.equal(taskCenterGroups[0].tasks[0].id, "scope-crawl-files");
 assert.equal(taskCenterGroups[1].tasks[0].id, "seo-title-description");
 assert.equal(taskCenterGroups[2].tasks[0].id, "validation-traffic");
+assert.equal(taskCenterGroups[1].tasks[0].status, "improved");
+assert.equal(taskCenterGroups[1].tasks[1].status, "review");
+assert.equal(taskCenterGroups[0].tasks[0].status, "todo");
 assert.ok(taskCenterGroups.flatMap((group) => group.tasks).slice(0, 3).some((task) => task.title.includes("Crawl files")));
 assert.equal(taskCenterGroups[0].tasks[0].source, "检查范围 / 证据缺口");
 assert.ok(taskCenterGroups[1].tasks[0].source.includes("Page source"));
