@@ -696,6 +696,55 @@ function EffectTrackingCard({ summary }: { summary: ReturnType<typeof getGeoEffe
   );
 }
 
+function WorkspaceFlowCard({
+  score,
+  featuredTask,
+  effectSummary,
+}: {
+  score: number | null;
+  featuredTask: ReturnType<typeof getGeoTaskCenterGroups>[number]["tasks"][number] | null;
+  effectSummary: ReturnType<typeof getGeoEffectTrackingSummary>;
+}) {
+  const steps = [
+    {
+      label: "当前状态",
+      title: score === null ? "等待首次审计" : `GEO 分数 ${score}`,
+      detail: effectSummary.summary,
+    },
+    {
+      label: "下一步任务",
+      title: featuredTask?.title ?? "暂无高优先级任务",
+      detail: featuredTask?.action ?? "保持页面、Schema、GA4 和站点文件稳定，等待下一次复查。",
+    },
+    {
+      label: "效果追踪",
+      title: effectSummary.behaviorSignal.label,
+      detail: effectSummary.behaviorSignal.detail,
+    },
+  ];
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2">
+        <ListChecks className="h-5 w-5 text-emerald-300" />
+        <CardTitle>工作台主线</CardTitle>
+      </div>
+      <CardDescription>先看状态，再处理一个任务，最后确认效果是否能被数据支持。</CardDescription>
+      <div className="mt-4 space-y-3">
+        {steps.map((step, index) => (
+          <div key={step.label} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-xs font-medium text-blue-300">
+              {index + 1}. {step.label}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">{step.title}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{step.detail}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -971,6 +1020,7 @@ export default async function GeoAuditV2Page() {
     previousReport,
     domain: primarySite?.domain,
   });
+  const featuredTask = taskCenterGroups.flatMap((group) => group.tasks)[0] ?? null;
   const statusSummary = getGeoAuditStatusSummary({
     scopeItems,
     scopeGaps,
@@ -1037,7 +1087,9 @@ export default async function GeoAuditV2Page() {
           )}
         </Card>
 
-        <Card>
+        <WorkspaceFlowCard score={report?.overallScore ?? null} featuredTask={featuredTask} effectSummary={effectTrackingSummary} />
+
+        <Card className="hidden">
           <div className="flex items-center gap-2">
             <ListChecks className="h-5 w-5 text-emerald-300" />
             <CardTitle>本轮只看 3 件事</CardTitle>

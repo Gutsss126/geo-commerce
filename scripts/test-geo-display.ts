@@ -42,6 +42,11 @@ assert.ok(
   "GEO audit details section should group expanded diagnostics for easier scanning"
 );
 
+assert.ok(
+  geoAuditPageSource.includes("WorkspaceFlowCard"),
+  "GEO audit first screen should explain the workflow: status, next task, and effect tracking"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,
