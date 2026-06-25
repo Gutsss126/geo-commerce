@@ -745,6 +745,47 @@ function WorkspaceFlowCard({
   );
 }
 
+function TaskReviewActions({
+  taskId,
+  siteId,
+}: {
+  taskId: string;
+  siteId?: string;
+}) {
+  const needsGa4 = taskId.includes("measurement") || taskId.includes("ga4") || taskId.includes("traffic");
+
+  return (
+    <div className="mt-3 rounded border border-[var(--border)] bg-slate-950/40 p-3">
+      <p className="text-xs font-medium text-slate-300">完成后复查</p>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        {needsGa4
+          ? "先确认 GA4 诊断能看到访问或关键事件，再重新运行 GEO Audit。"
+          : "发布修改后重新运行 GEO Audit，对比本次和上次变化。"}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {needsGa4 && (
+          <Link
+            href="/diagnostics/ga4"
+            className="rounded border border-slate-600/70 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800"
+          >
+            查看 GA4 诊断
+          </Link>
+        )}
+        {siteId && (
+          <form action={runSiteAudit.bind(null, siteId)}>
+            <button
+              type="submit"
+              className="rounded border border-blue-500/40 px-3 py-1.5 text-xs font-medium text-blue-200 hover:bg-blue-500/10"
+            >
+              重新运行 GEO Audit
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -828,7 +869,13 @@ function ExecutionTasksCard({ actionItems, domain }: { actionItems: GeoActionIte
   );
 }
 
-function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenterGroups> }) {
+function TaskCenterCard({
+  groups,
+  siteId,
+}: {
+  groups: ReturnType<typeof getGeoTaskCenterGroups>;
+  siteId?: string;
+}) {
   const allTasks = groups.flatMap((group) => group.tasks.map((task) => ({ ...task, groupLabel: group.label })));
   const topTasks = allTasks.slice(0, 3);
   if (allTasks.length === 0) return null;
@@ -888,6 +935,7 @@ function TaskCenterCard({ groups }: { groups: ReturnType<typeof getGeoTaskCenter
                 {task.validation}
               </p>
             </div>
+            <TaskReviewActions taskId={task.id} siteId={siteId} />
             <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
               <summary className="cursor-pointer text-xs font-medium text-slate-200">查看来源和影响</summary>
               <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
@@ -1115,7 +1163,7 @@ export default async function GeoAuditV2Page() {
       </div>
       <EffectTrackingCard summary={effectTrackingSummary} />
       <div id="geo-audit-tasks" className="scroll-mt-4">
-        <TaskCenterCard groups={taskCenterGroups} />
+        <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
       </div>
       <div id="geo-audit-review" className="scroll-mt-4">
         <ReviewStepsCard steps={reviewSteps} />

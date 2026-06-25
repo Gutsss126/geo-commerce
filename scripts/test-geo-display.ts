@@ -47,6 +47,11 @@ assert.ok(
   "GEO audit first screen should explain the workflow: status, next task, and effect tracking"
 );
 
+assert.ok(
+  geoAuditPageSource.includes("TaskReviewActions"),
+  "GEO audit task cards should expose the next review action"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,
