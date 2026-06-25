@@ -84,6 +84,59 @@ function GeoAuditPageNav() {
   );
 }
 
+function QuickFocusBanner({
+  featuredTask,
+  hasReport,
+}: {
+  featuredTask: ReturnType<typeof getGeoTaskCenterGroups>[number]["tasks"][number] | null;
+  hasReport: boolean;
+}) {
+  const title = !hasReport ? "先生成一份诊断" : featuredTask ? "现在先处理这一项" : "进入复查节奏";
+  const detail = !hasReport
+    ? "运行 GEO Audit 后，工具会把结果整理成任务、复查和详细诊断。"
+    : featuredTask
+      ? featuredTask.title
+      : "当前没有高优先级任务，建议查看复查步骤和效果追踪。";
+  const helper = !hasReport
+    ? "先拿到基线，再谈优化。"
+    : featuredTask
+      ? "从任务中心开始，做完后用卡片里的复查动作确认。"
+      : "保持监测，不要为了分数反复改动稳定内容。";
+
+  return (
+    <section
+      aria-label="Current GEO audit focus"
+      className="rounded-xl border border-blue-500/25 bg-blue-500/10 p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">当前焦点</p>
+          <p className="mt-1 text-base font-semibold text-slate-100">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-300">{detail}</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{helper}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {featuredTask && (
+            <a
+              href="#geo-audit-tasks"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+            >
+              开始处理
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          )}
+          <a
+            href="#geo-audit-review"
+            className="inline-flex items-center gap-2 rounded-lg border border-blue-500/40 px-3 py-2 text-sm font-medium text-blue-100 hover:bg-blue-500/10"
+          >
+            查看复查
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DetailGroupLabel({ title, description }: { title: string; description: string }) {
   return (
     <div className="rounded-lg border border-[var(--border)] bg-slate-950/25 px-4 py-3">
@@ -1151,6 +1204,7 @@ export default async function GeoAuditV2Page() {
       </div>
 
       <GeoAuditPageNav />
+      <QuickFocusBanner featuredTask={featuredTask} hasReport={Boolean(report)} />
 
       <div id="geo-audit-result" className="scroll-mt-4">
         <AuditDeltaCard

@@ -52,6 +52,11 @@ assert.ok(
   "GEO audit task cards should expose the next review action"
 );
 
+assert.ok(
+  geoAuditPageSource.includes("QuickFocusBanner"),
+  "GEO audit page should expose a compact current-focus entry point"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,
