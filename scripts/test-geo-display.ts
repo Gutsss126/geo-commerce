@@ -57,6 +57,11 @@ assert.ok(
   "GEO audit page should expose a compact current-focus entry point"
 );
 
+assert.ok(
+  geoAuditPageSource.includes("TaskDetailDisclosure"),
+  "GEO audit task cards should keep secondary task details folded by default"
+);
+
 assert.equal(
   formatGeoScoreGap({
     score: 10,

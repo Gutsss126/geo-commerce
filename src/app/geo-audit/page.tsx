@@ -839,6 +839,48 @@ function TaskReviewActions({
   );
 }
 
+function TaskDetailDisclosure({
+  goal,
+  action,
+  validation,
+  source,
+  impact,
+}: {
+  goal: string;
+  action: string;
+  validation: string;
+  source: string;
+  impact: string;
+}) {
+  return (
+    <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+      <summary className="cursor-pointer text-xs font-medium text-slate-200">查看执行细节</summary>
+      <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
+        <p>
+          <span className="text-slate-300">目标：</span>
+          {goal}
+        </p>
+        <p>
+          <span className="text-slate-300">动作：</span>
+          {action}
+        </p>
+        <p>
+          <span className="text-slate-300">验证：</span>
+          {validation}
+        </p>
+        <p>
+          <span className="text-slate-300">来源：</span>
+          {source}
+        </p>
+        <p>
+          <span className="text-slate-300">影响：</span>
+          {impact}
+        </p>
+      </div>
+    </details>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -974,7 +1016,7 @@ function TaskCenterCard({
             <p className="mt-3 rounded border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs leading-5 text-blue-100">
               {task.explanation}
             </p>
-            <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
+            <div className="hidden mt-3 space-y-2 text-xs leading-5 text-slate-400">
               <p>
                 <span className="text-slate-300">目标：</span>
                 {task.goal}
@@ -989,7 +1031,14 @@ function TaskCenterCard({
               </p>
             </div>
             <TaskReviewActions taskId={task.id} siteId={siteId} />
-            <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+            <TaskDetailDisclosure
+              goal={task.goal}
+              action={task.action}
+              validation={task.validation}
+              source={task.source}
+              impact={task.impact}
+            />
+            <details className="hidden mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
               <summary className="cursor-pointer text-xs font-medium text-slate-200">查看来源和影响</summary>
               <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
                 <p>
