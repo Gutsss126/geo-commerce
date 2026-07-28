@@ -58,6 +58,11 @@ assert.ok(
 );
 
 assert.ok(
+  geoAuditPageSource.includes("geoAuditPrimaryNavItems") && geoAuditPageSource.includes("geoAuditDetailsNavItem"),
+  "GEO audit navigation should separate the 3-step workbench flow from secondary details"
+);
+
+assert.ok(
   geoAuditPageSource.includes("TaskDetailDisclosure"),
   "GEO audit task cards should keep secondary task details folded by default"
 );

@@ -58,27 +58,36 @@ function TaskStatusPill({ status }: { status: "todo" | "review" | "improved" }) 
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
 }
 
-const geoAuditNavItems = [
-  { href: "#geo-audit-result", label: "看结果", helper: "分数变化" },
-  { href: "#geo-audit-tasks", label: "处理任务", helper: "下一步" },
-  { href: "#geo-audit-review", label: "复查步骤", helper: "验证效果" },
-  { href: "#geo-audit-details", label: "详细诊断", helper: "展开查看" },
+const geoAuditPrimaryNavItems = [
+  { href: "#geo-audit-result", label: "看状态", helper: "分数变化" },
+  { href: "#geo-audit-tasks", label: "做任务", helper: "下一步" },
+  { href: "#geo-audit-review", label: "查效果", helper: "验证结果" },
 ];
+
+const geoAuditDetailsNavItem = { href: "#geo-audit-details", label: "详细诊断" };
 
 function GeoAuditPageNav() {
   return (
     <nav aria-label="GEO Audit page sections" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {geoAuditNavItems.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            className="group rounded-lg border border-[var(--border)] bg-slate-950/35 px-3 py-2 transition hover:border-blue-500/40 hover:bg-blue-500/10"
-          >
-            <span className="block text-sm font-medium text-slate-100 group-hover:text-blue-100">{item.label}</span>
-            <span className="mt-0.5 block text-xs text-slate-500">{item.helper}</span>
-          </a>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="grid flex-1 gap-2 sm:grid-cols-3">
+          {geoAuditPrimaryNavItems.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="group rounded-lg border border-[var(--border)] bg-slate-950/35 px-3 py-2 transition hover:border-blue-500/40 hover:bg-blue-500/10"
+            >
+              <span className="block text-sm font-medium text-slate-100 group-hover:text-blue-100">{item.label}</span>
+              <span className="mt-0.5 block text-xs text-slate-500">{item.helper}</span>
+            </a>
+          ))}
+        </div>
+        <a
+          href={geoAuditDetailsNavItem.href}
+          className="rounded border border-slate-600/70 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800"
+        >
+          {geoAuditDetailsNavItem.label}
+        </a>
       </div>
     </nav>
   );
