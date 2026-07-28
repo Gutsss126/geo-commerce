@@ -63,6 +63,11 @@ assert.ok(
 );
 
 assert.ok(
+  geoAuditPageSource.includes("AuditDeltaActionLinks"),
+  "GEO audit status card should include action links to tasks and review"
+);
+
+assert.ok(
   geoAuditPageSource.includes("TaskDetailDisclosure"),
   "GEO audit task cards should keep secondary task details folded by default"
 );

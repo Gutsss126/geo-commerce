@@ -621,18 +621,42 @@ function formatAuditTime(value?: Date | string | null) {
   }).format(new Date(value));
 }
 
+function AuditDeltaActionLinks({ hasTasks }: { hasTasks: boolean }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {hasTasks && (
+        <a
+          href="#geo-audit-tasks"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+        >
+          处理下一项
+          <ArrowRight className="h-4 w-4" />
+        </a>
+      )}
+      <a
+        href="#geo-audit-review"
+        className="rounded-lg border border-slate-600/70 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+      >
+        查看复查步骤
+      </a>
+    </div>
+  );
+}
+
 function AuditDeltaCard({
   current,
   previous,
   auditCount,
   currentCreatedAt,
   previousCreatedAt,
+  hasTasks,
 }: {
   current: GeoAuditReport | null;
   previous: GeoAuditReport | null;
   auditCount: number;
   currentCreatedAt?: Date | null;
   previousCreatedAt?: Date | null;
+  hasTasks: boolean;
 }) {
   if (!current) return null;
   const delta = formatGeoAuditDelta(current, previous);
@@ -664,6 +688,7 @@ function AuditDeltaCard({
         </span>
       </div>
       <p className="mt-4 text-sm text-slate-300">{delta.summary}</p>
+      <AuditDeltaActionLinks hasTasks={hasTasks} />
       <div className="mt-4 grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
           <p className="text-xs text-slate-500">本次分数</p>
@@ -1271,6 +1296,7 @@ export default async function GeoAuditV2Page() {
           auditCount={primarySite?._count.audits ?? 0}
           currentCreatedAt={latestAudit?.createdAt}
           previousCreatedAt={previousAudit?.createdAt}
+          hasTasks={taskCenterGroups.some((group) => group.tasks.length > 0)}
         />
       </div>
       <EffectTrackingCard summary={effectTrackingSummary} />
