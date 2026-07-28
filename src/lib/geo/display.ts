@@ -159,6 +159,14 @@ export type GeoAuditStageGate = {
   detail: string;
 };
 
+export type GeoAuditConclusion = {
+  tone: "setup" | "risk" | "action" | "observe";
+  headline: string;
+  risk: string;
+  nextAction: string;
+  notReady: string;
+};
+
 export type GeoAuditStatusSummaryItem = {
   id: "coverage" | "required" | "actions" | "validation";
   label: string;
@@ -1018,6 +1026,63 @@ export function getGeoAuditStageGates({
         : "等任务和验证入口稳定后，再进入趋势观察。",
     },
   ];
+}
+
+export function getGeoAuditConclusion({
+  currentScore,
+  taskGroups,
+  stageGates,
+  verificationDecision,
+}: {
+  currentScore: number | null | undefined;
+  taskGroups: GeoTaskCenterGroup[];
+  stageGates: GeoAuditStageGate[];
+  verificationDecision: GeoVerificationDecisionSummary;
+}): GeoAuditConclusion {
+  const tasks = taskGroups.flatMap((group) => group.tasks);
+  const featuredTask = tasks[0] ?? null;
+  const blockedGate = stageGates.find((gate) => gate.status === "blocked");
+  const blockedVerification = verificationDecision.items.find((item) => item.status === "blocked");
+  const observeGate = stageGates.find((gate) => gate.id === "observe");
+
+  if (currentScore === null || currentScore === undefined) {
+    return {
+      tone: "setup",
+      headline: "还没有可判断的 GEO 基线",
+      risk: "当前最大风险不是分数低，而是还没有第一份可对比报告。",
+      nextAction: "先运行 GEO Audit，生成基线后再决定优化顺序。",
+      notReady: "现在不能判断优化效果，因为还没有审计、GA4 和时间窗口对比。",
+    };
+  }
+
+  if (blockedGate || blockedVerification) {
+    const blockedLabel = blockedVerification?.label ?? blockedGate?.label ?? "验证入口";
+    return {
+      tone: "risk",
+      headline: `当前分数 ${currentScore}，但验证入口还没完全打通`,
+      risk: `${blockedLabel} 正在阻塞判断，优先检查 GA4、页面证据或高优先级缺口。`,
+      nextAction: verificationDecision.primaryAction,
+      notReady: "现在不能判断 GEO 优化是否真的有效，只能判断页面和配置是否更完整。",
+    };
+  }
+
+  if (featuredTask) {
+    return {
+      tone: "action",
+      headline: `当前分数 ${currentScore}，下一步先处理一个任务`,
+      risk: `最大风险是任务过多导致执行分散，先不要同时改很多地方。`,
+      nextAction: `优先处理：${featuredTask.title}`,
+      notReady: "最终效果需要 7/14/28 天数据窗口，短期分数变化不能直接等同于增长。",
+    };
+  }
+
+  return {
+    tone: "observe",
+    headline: `当前分数 ${currentScore}，进入观察阶段`,
+    risk: "当前没有明显高优先级任务，过度修改反而可能破坏稳定信号。",
+    nextAction: observeGate?.detail ?? verificationDecision.primaryAction,
+    notReady: "继续等待 7/14/28 天 GA4 和搜索数据，再判断趋势。",
+  };
 }
 
 export function getGeoAuditStatusSummary({

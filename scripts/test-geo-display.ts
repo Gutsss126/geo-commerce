@@ -19,6 +19,7 @@ import {
   getGeoTodayActionPlan,
   getGeoTaskCompletionChecklist,
   getGeoAuditStageGates,
+  getGeoAuditConclusion,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -94,6 +95,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("StageGateCard"),
   "GEO audit page should expose a compact stage gate overview"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("AuditConclusionCard"),
+  "GEO audit page should expose a user-readable conclusion summary"
 );
 
 assert.equal(
@@ -737,5 +743,35 @@ const blockedStageGates = getGeoAuditStageGates({
 });
 assert.equal(blockedStageGates[2].status, "blocked");
 assert.ok(blockedStageGates[2].detail.includes("GA4"));
+
+const firstConclusion = getGeoAuditConclusion({
+  currentScore: null,
+  taskGroups: [],
+  stageGates: firstStageGates,
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(firstConclusion.tone, "setup");
+assert.ok(firstConclusion.headline.includes("基线"));
+assert.ok(firstConclusion.nextAction.includes("GEO Audit"));
+
+const blockedConclusion = getGeoAuditConclusion({
+  currentScore: 60,
+  taskGroups: [],
+  stageGates: blockedStageGates,
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(blockedConclusion.tone, "risk");
+assert.ok(blockedConclusion.risk.includes("GA4"));
+assert.ok(blockedConclusion.notReady.includes("不能判断"));
+
+const activeConclusion = getGeoAuditConclusion({
+  currentScore: 82,
+  taskGroups: taskCenterGroups,
+  stageGates: activeStageGates,
+  verificationDecision,
+});
+assert.equal(activeConclusion.tone, "action");
+assert.ok(activeConclusion.nextAction.includes(taskCenterGroups[0].tasks[0].title));
+assert.ok(activeConclusion.notReady.includes("7/14/28"));
 
 console.log("GEO display tests passed");

@@ -17,6 +17,7 @@ import {
   getGeoReviewSteps,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
+  getGeoAuditConclusion,
   getGeoAuditStageGates,
   getGeoTaskCompletionChecklist,
   getGeoTaskCenterGroups,
@@ -203,6 +204,57 @@ function TodayActionCard({ plan }: { plan: ReturnType<typeof getGeoTodayActionPl
             <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{step.detail}</p>
           </div>
         ))}
+      </div>
+    </Card>
+  );
+}
+
+function AuditConclusionCard({ conclusion }: { conclusion: ReturnType<typeof getGeoAuditConclusion> }) {
+  const toneStyles = {
+    setup: "border-blue-500/30 bg-blue-500/10 text-blue-100",
+    risk: "border-rose-500/30 bg-rose-500/10 text-rose-100",
+    action: "border-emerald-500/30 bg-emerald-500/10 text-emerald-100",
+    observe: "border-slate-600/70 bg-slate-950/40 text-slate-200",
+  };
+  const toneLabels = {
+    setup: "先建基线",
+    risk: "先排风险",
+    action: "先执行",
+    observe: "先观察",
+  };
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded border px-2 py-1 text-xs font-medium ${toneStyles[conclusion.tone]}`}>
+              {toneLabels[conclusion.tone]}
+            </span>
+            <CardTitle>本次结论</CardTitle>
+          </div>
+          <p className="mt-2 text-base font-semibold text-slate-100">{conclusion.headline}</p>
+        </div>
+        <a
+          href="#geo-audit-tasks"
+          className="rounded border border-blue-500/40 px-3 py-2 text-sm font-medium text-blue-100 hover:bg-blue-500/10"
+        >
+          查看任务
+        </a>
+      </div>
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs font-medium text-rose-200">最大风险</p>
+          <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-400">{conclusion.risk}</p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs font-medium text-blue-200">下一步</p>
+          <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-400">{conclusion.nextAction}</p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+          <p className="text-xs font-medium text-amber-200">暂不能判断</p>
+          <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-400">{conclusion.notReady}</p>
+        </div>
       </div>
     </Card>
   );
@@ -1450,6 +1502,12 @@ export default async function GeoAuditV2Page() {
     taskGroups: taskCenterGroups,
     verificationDecision: verificationDecisionSummary,
   });
+  const auditConclusion = getGeoAuditConclusion({
+    currentScore: report?.overallScore ?? null,
+    taskGroups: taskCenterGroups,
+    stageGates,
+    verificationDecision: verificationDecisionSummary,
+  });
   const detailsSummaryItems = [
     { label: "检查项", value: checks.length },
     { label: "证据缺口", value: scopeGaps.length },
@@ -1521,6 +1579,7 @@ export default async function GeoAuditV2Page() {
       </div>
 
       <GeoAuditPageNav />
+      <AuditConclusionCard conclusion={auditConclusion} />
       <TodayActionCard plan={todayActionPlan} />
       <StageGateCard gates={stageGates} />
 
