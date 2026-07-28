@@ -17,6 +17,7 @@ import {
   getGeoReviewSteps,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
+  getGeoTaskCompletionChecklist,
   getGeoTaskCenterGroups,
   getGeoTodayActionPlan,
   getGeoValidationLoopItems,
@@ -1053,6 +1054,33 @@ function TaskDetailDisclosure({
   );
 }
 
+function TaskCompletionChecklist({
+  task,
+}: {
+  task: ReturnType<typeof getGeoTaskCenterGroups>[number]["tasks"][number];
+}) {
+  const checklist = getGeoTaskCompletionChecklist(task);
+
+  return (
+    <div className="mt-3 rounded border border-[var(--border)] bg-slate-950/40 p-3">
+      <p className="text-xs font-medium text-slate-300">完成标准</p>
+      <div className="mt-2 space-y-2">
+        {checklist.map((item, index) => (
+          <div key={item.id} className="flex gap-2 text-xs leading-5 text-slate-500">
+            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-blue-500/40 text-[10px] text-blue-200">
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="font-medium text-slate-300">{item.label}</p>
+              <p className="line-clamp-2">{item.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -1188,6 +1216,7 @@ function TaskCenterCard({
             <p className="mt-3 rounded border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs leading-5 text-blue-100">
               {task.explanation}
             </p>
+            <TaskCompletionChecklist task={task} />
             <div className="hidden mt-3 space-y-2 text-xs leading-5 text-slate-400">
               <p>
                 <span className="text-slate-300">目标：</span>

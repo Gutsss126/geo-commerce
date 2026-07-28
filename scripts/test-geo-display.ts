@@ -17,6 +17,7 @@ import {
   getGeoEffectTrackingSummary,
   getGeoVerificationDecisionSummary,
   getGeoTodayActionPlan,
+  getGeoTaskCompletionChecklist,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -72,6 +73,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("TaskDetailDisclosure"),
   "GEO audit task cards should keep secondary task details folded by default"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("TaskCompletionChecklist"),
+  "GEO audit task cards should expose a short completion checklist"
 );
 
 assert.ok(
@@ -376,6 +382,17 @@ assert.equal(taskCenterGroups[0].tasks[0].source, "检查范围 / 证据缺口")
 assert.ok(taskCenterGroups[1].tasks[0].source.includes("Page source"));
 assert.ok(taskCenterGroups[1].tasks[0].impact.includes("搜索"));
 assert.ok(taskCenterGroups[2].tasks[0].explanation.includes("验证层"));
+
+const completionChecklist = getGeoTaskCompletionChecklist(taskCenterGroups[1].tasks[1]);
+assert.deepEqual(
+  completionChecklist.map((item) => item.id),
+  ["publish", "verify", "rerun"]
+);
+assert.ok(completionChecklist[1].detail.includes("GA4"));
+assert.ok(completionChecklist[2].detail.includes("Refresh GA4"));
+
+const contentCompletionChecklist = getGeoTaskCompletionChecklist(taskCenterGroups[1].tasks[0]);
+assert.ok(contentCompletionChecklist[1].detail.includes("GEO Audit"));
 
 const statusSummary = getGeoAuditStatusSummary({
   scopeItems: [

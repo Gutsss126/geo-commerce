@@ -146,6 +146,12 @@ export type GeoTaskCenterGroup = {
   tasks: GeoTaskCenterTask[];
 };
 
+export type GeoTaskCompletionChecklistItem = {
+  id: "publish" | "verify" | "rerun";
+  label: string;
+  detail: string;
+};
+
 export type GeoAuditStatusSummaryItem = {
   id: "coverage" | "required" | "actions" | "validation";
   label: string;
@@ -919,6 +925,30 @@ export function getGeoTaskCenterGroups({
       label: "观察结果",
       summary: "最后看数据变化，判断优化是否真的变得可见、可用。",
       tasks: validationTasks,
+    },
+  ];
+}
+
+export function getGeoTaskCompletionChecklist(task: Pick<GeoTaskCenterTask, "id" | "action" | "validation">): GeoTaskCompletionChecklistItem[] {
+  const needsGa4 = task.id.includes("measurement") || task.id.includes("ga4") || task.id.includes("traffic");
+
+  return [
+    {
+      id: "publish",
+      label: "已完成修改",
+      detail: task.action,
+    },
+    {
+      id: "verify",
+      label: needsGa4 ? "GA4 已看到信号" : "页面已重新检查",
+      detail: needsGa4
+        ? "打开 GA4 诊断，确认 page_view、点击、加购或结账事件已经出现。"
+        : "重新运行 GEO Audit，确认这个问题不再出现在高优先级任务里。",
+    },
+    {
+      id: "rerun",
+      label: "已复查结果",
+      detail: task.validation,
     },
   ];
 }
