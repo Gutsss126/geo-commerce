@@ -16,6 +16,7 @@ import {
   getGeoStrategyReadiness,
   getGeoEffectTrackingSummary,
   getGeoVerificationDecisionSummary,
+  getGeoTodayActionPlan,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -76,6 +77,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("VerificationDecisionCard"),
   "GEO audit page should summarize what can be verified now before showing detailed diagnostics"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("TodayActionCard"),
+  "GEO audit page should expose one simple action plan before detailed task groups"
 );
 
 assert.equal(
@@ -650,5 +656,32 @@ assert.equal(blockedVerificationDecision.items[0].status, "blocked");
 assert.equal(blockedVerificationDecision.items[1].status, "blocked");
 assert.equal(blockedVerificationDecision.items[2].status, "blocked");
 assert.ok(blockedVerificationDecision.primaryAction.includes("GA4"));
+
+const firstTodayAction = getGeoTodayActionPlan({
+  hasReport: false,
+  featuredTask: null,
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(firstTodayAction.mode, "audit");
+assert.equal(firstTodayAction.primaryHref, "#geo-audit-result");
+assert.equal(firstTodayAction.steps.length, 3);
+
+const blockedTodayAction = getGeoTodayActionPlan({
+  hasReport: true,
+  featuredTask: null,
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(blockedTodayAction.mode, "verify");
+assert.equal(blockedTodayAction.primaryHref, "/diagnostics/ga4");
+assert.ok(blockedTodayAction.summary.includes("GA4"));
+
+const taskTodayAction = getGeoTodayActionPlan({
+  hasReport: true,
+  featuredTask: taskCenterGroups[0].tasks[0],
+  verificationDecision,
+});
+assert.equal(taskTodayAction.mode, "fix");
+assert.equal(taskTodayAction.primaryHref, "#geo-audit-tasks");
+assert.ok(taskTodayAction.summary.includes(taskCenterGroups[0].tasks[0].title));
 
 console.log("GEO display tests passed");

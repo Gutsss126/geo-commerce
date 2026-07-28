@@ -18,6 +18,7 @@ import {
   getGeoScopeGaps,
   getGeoStrategyReadiness,
   getGeoTaskCenterGroups,
+  getGeoTodayActionPlan,
   getGeoValidationLoopItems,
   getGeoVerificationDecisionSummary,
 } from "@/lib/geo/display";
@@ -144,6 +145,64 @@ function QuickFocusBanner({
         </div>
       </div>
     </section>
+  );
+}
+
+function TodayActionCard({ plan }: { plan: ReturnType<typeof getGeoTodayActionPlan> }) {
+  const modeStyles = {
+    audit: "border-blue-500/30 bg-blue-500/10 text-blue-100",
+    verify: "border-amber-500/30 bg-amber-500/10 text-amber-100",
+    fix: "border-emerald-500/30 bg-emerald-500/10 text-emerald-100",
+    watch: "border-slate-600/70 bg-slate-950/40 text-slate-200",
+  };
+  const modeLabels = {
+    audit: "先建基线",
+    verify: "先验证",
+    fix: "先执行",
+    watch: "先观察",
+  };
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded border px-2 py-1 text-xs font-medium ${modeStyles[plan.mode]}`}>
+              {modeLabels[plan.mode]}
+            </span>
+            <CardTitle>今日行动</CardTitle>
+          </div>
+          <p className="mt-2 text-base font-semibold text-slate-100">{plan.title}</p>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">{plan.summary}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={plan.primaryHref}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
+          >
+            {plan.primaryLabel}
+            <ArrowRight className="h-4 w-4" />
+          </a>
+          <a
+            href={plan.secondaryHref}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-600/70 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+          >
+            {plan.secondaryLabel}
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        {plan.steps.map((step, index) => (
+          <div key={step.label} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <p className="text-xs font-medium text-blue-300">
+              {index + 1}. {step.label}
+            </p>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{step.detail}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -1301,6 +1360,11 @@ export default async function GeoAuditV2Page() {
     validationLoopItems,
     effectTracking: effectTrackingSummary,
   });
+  const todayActionPlan = getGeoTodayActionPlan({
+    hasReport: Boolean(report),
+    featuredTask,
+    verificationDecision: verificationDecisionSummary,
+  });
   const detailsSummaryItems = [
     { label: "检查项", value: checks.length },
     { label: "证据缺口", value: scopeGaps.length },
@@ -1372,7 +1436,7 @@ export default async function GeoAuditV2Page() {
       </div>
 
       <GeoAuditPageNav />
-      <QuickFocusBanner featuredTask={featuredTask} hasReport={Boolean(report)} />
+      <TodayActionCard plan={todayActionPlan} />
 
       <div id="geo-audit-result" className="scroll-mt-4">
         <AuditDeltaCard

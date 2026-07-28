@@ -215,6 +215,20 @@ export type GeoVerificationDecisionSummary = {
   items: GeoVerificationDecisionItem[];
 };
 
+export type GeoTodayActionPlan = {
+  mode: "audit" | "verify" | "fix" | "watch";
+  title: string;
+  summary: string;
+  primaryLabel: string;
+  primaryHref: string;
+  secondaryLabel: string;
+  secondaryHref: string;
+  steps: Array<{
+    label: string;
+    detail: string;
+  }>;
+};
+
 function normalizePath(path?: string | null) {
   const raw = (path || "/tiktok/").trim();
   const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
@@ -665,6 +679,89 @@ export function getGeoVerificationDecisionSummary({
     summary: `${verifiedCount}/5 个验证层已成立，${blockedCount} 个阻塞，${waitingCount} 个等待数据。`,
     primaryAction,
     items,
+  };
+}
+
+export function getGeoTodayActionPlan({
+  hasReport,
+  featuredTask,
+  verificationDecision,
+}: {
+  hasReport: boolean;
+  featuredTask: GeoTaskCenterTask | null | undefined;
+  verificationDecision: GeoVerificationDecisionSummary;
+}): GeoTodayActionPlan {
+  const blockedItem =
+    verificationDecision.items.find((item) => item.id === "behavior" && item.status === "blocked") ??
+    verificationDecision.items.find((item) => item.status === "blocked");
+
+  if (!hasReport) {
+    return {
+      mode: "audit",
+      title: "先生成第一份诊断",
+      summary: "没有基线时，任何优化都无法判断是否真的有效。",
+      primaryLabel: "运行 GEO Audit",
+      primaryHref: "#geo-audit-result",
+      secondaryLabel: "查看检查范围",
+      secondaryHref: "#geo-audit-details",
+      steps: [
+        { label: "生成基线", detail: "先获得当前分数、问题和证据范围。" },
+        { label: "只选一项", detail: "从任务中心选择最高优先级任务。" },
+        { label: "复查变化", detail: "发布后重新审计，再看分数和 GA4 信号。" },
+      ],
+    };
+  }
+
+  if (blockedItem) {
+    const isBehaviorBlocked = blockedItem.id === "behavior";
+    return {
+      mode: "verify",
+      title: "先打通验证入口",
+      summary: isBehaviorBlocked
+        ? "GA4 或行为事件还没完全打通，先别急着判断优化效果。"
+        : `${blockedItem.label} 还阻塞，先补齐这个验证层。`,
+      primaryLabel: isBehaviorBlocked ? "查看 GA4 诊断" : "查看详细诊断",
+      primaryHref: isBehaviorBlocked ? "/diagnostics/ga4" : "#geo-audit-details",
+      secondaryLabel: "查看复查步骤",
+      secondaryHref: "#geo-audit-review",
+      steps: [
+        { label: "确认阻塞", detail: blockedItem.signal },
+        { label: "处理入口", detail: blockedItem.nextStep },
+        { label: "重新验证", detail: "刷新诊断或重新运行 GEO Audit。" },
+      ],
+    };
+  }
+
+  if (featuredTask) {
+    return {
+      mode: "fix",
+      title: "今天只处理一个任务",
+      summary: featuredTask.title,
+      primaryLabel: "打开任务中心",
+      primaryHref: "#geo-audit-tasks",
+      secondaryLabel: "查看验证判断",
+      secondaryHref: "#geo-audit-review",
+      steps: [
+        { label: "处理任务", detail: featuredTask.action },
+        { label: "发布修改", detail: "确认线上页面已经看到新内容。" },
+        { label: "复查结果", detail: featuredTask.validation },
+      ],
+    };
+  }
+
+  return {
+    mode: "watch",
+    title: "保持观察，不要过度修改",
+    summary: verificationDecision.primaryAction,
+    primaryLabel: "查看验证判断",
+    primaryHref: "#geo-audit-review",
+    secondaryLabel: "查看详细诊断",
+    secondaryHref: "#geo-audit-details",
+    steps: [
+      { label: "保持稳定", detail: "不要为了分数频繁改动已经稳定的页面。" },
+      { label: "等待窗口", detail: "按 7/14/28 天观察 GA4 和后续搜索信号。" },
+      { label: "再做复查", detail: "下一次审计再判断是否需要继续优化。" },
+    ],
   };
 }
 
