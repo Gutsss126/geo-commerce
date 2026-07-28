@@ -19,6 +19,7 @@ import {
   getGeoStrategyReadiness,
   getGeoTaskCenterGroups,
   getGeoValidationLoopItems,
+  getGeoVerificationDecisionSummary,
 } from "@/lib/geo/display";
 import type {
   GeoActionItem,
@@ -783,6 +784,84 @@ function EffectTrackingCard({ summary }: { summary: ReturnType<typeof getGeoEffe
   );
 }
 
+function VerificationDecisionStatusPill({
+  status,
+}: {
+  status: ReturnType<typeof getGeoVerificationDecisionSummary>["items"][number]["status"];
+}) {
+  const styles = {
+    verified: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    watching: "border-blue-500/30 bg-blue-500/5 text-blue-200",
+    waiting: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+    blocked: "border-rose-500/30 bg-rose-500/5 text-rose-200",
+  };
+  const labels = {
+    verified: "已验证",
+    watching: "观察中",
+    waiting: "等待",
+    blocked: "阻塞",
+  };
+
+  return <span className={`rounded border px-2 py-1 text-xs font-medium ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function VerificationDecisionCard({
+  summary,
+}: {
+  summary: ReturnType<typeof getGeoVerificationDecisionSummary>;
+}) {
+  const shouldShowGa4Link = summary.primaryAction.includes("GA4");
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+            <CardTitle>验证判断</CardTitle>
+          </div>
+          <CardDescription>{summary.headline}</CardDescription>
+        </div>
+        <span className="rounded border border-slate-600/70 bg-slate-950/40 px-2 py-1 text-xs text-slate-300">
+          5 layers
+        </span>
+      </div>
+
+      <p className="mt-4 text-sm leading-6 text-slate-300">{summary.summary}</p>
+      <p className="mt-1 text-sm leading-6 text-blue-200">{summary.primaryAction}</p>
+
+      <div className="mt-4 grid gap-2 md:grid-cols-5">
+        {summary.items.map((item) => (
+          <div key={item.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-100">{item.label}</p>
+              <VerificationDecisionStatusPill status={item.status} />
+            </div>
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.signal}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {shouldShowGa4Link && (
+          <Link
+            href="/diagnostics/ga4"
+            className="rounded border border-blue-500/40 px-3 py-1.5 text-xs font-medium text-blue-200 hover:bg-blue-500/10"
+          >
+            查看 GA4 诊断
+          </Link>
+        )}
+        <a
+          href="#geo-audit-review"
+          className="rounded border border-slate-600/70 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800"
+        >
+          查看复查步骤
+        </a>
+      </div>
+    </Card>
+  );
+}
+
 function WorkspaceFlowCard({
   score,
   featuredTask,
@@ -1216,6 +1295,12 @@ export default async function GeoAuditV2Page() {
     current: report,
     previous: previousReport,
   });
+  const verificationDecisionSummary = getGeoVerificationDecisionSummary({
+    current: report,
+    previous: previousReport,
+    validationLoopItems,
+    effectTracking: effectTrackingSummary,
+  });
   const detailsSummaryItems = [
     { label: "检查项", value: checks.length },
     { label: "证据缺口", value: scopeGaps.length },
@@ -1300,6 +1385,7 @@ export default async function GeoAuditV2Page() {
         />
       </div>
       <EffectTrackingCard summary={effectTrackingSummary} />
+      <VerificationDecisionCard summary={verificationDecisionSummary} />
       <div id="geo-audit-tasks" className="scroll-mt-4">
         <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
       </div>

@@ -198,6 +198,23 @@ export type GeoValidationLoopItem = {
   nextStep: string;
 };
 
+export type GeoVerificationDecisionStatus = "verified" | "watching" | "waiting" | "blocked";
+
+export type GeoVerificationDecisionItem = {
+  id: "basic" | "understanding" | "behavior" | "commerce" | "time";
+  label: string;
+  status: GeoVerificationDecisionStatus;
+  signal: string;
+  nextStep: string;
+};
+
+export type GeoVerificationDecisionSummary = {
+  headline: string;
+  summary: string;
+  primaryAction: string;
+  items: GeoVerificationDecisionItem[];
+};
+
 function normalizePath(path?: string | null) {
   const raw = (path || "/tiktok/").trim();
   const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
@@ -529,6 +546,126 @@ export function getGeoValidationLoopItems({
       nextStep: "Connect add_to_cart, checkout, purchase, or WooCommerce order data before claiming revenue impact.",
     },
   ];
+}
+
+function verificationStatusFromLoop(
+  item: GeoValidationLoopItem | undefined
+): GeoVerificationDecisionStatus {
+  if (!item) return "waiting";
+  if (item.status === "verified") return "verified";
+  if (item.status === "blocked") return "blocked";
+  if (item.status === "watching") return "watching";
+  return "waiting";
+}
+
+export function getGeoVerificationDecisionSummary({
+  current,
+  previous,
+  validationLoopItems,
+  effectTracking,
+}: {
+  current: Pick<GeoAuditReport, "overallScore" | "checks"> | null | undefined;
+  previous?: Pick<GeoAuditReport, "overallScore" | "checks"> | null;
+  validationLoopItems: GeoValidationLoopItem[];
+  effectTracking: GeoEffectTrackingSummary;
+}): GeoVerificationDecisionSummary {
+  const loopById = new Map(validationLoopItems.map((item) => [item.id, item]));
+  const technical = loopById.get("technical");
+  const understanding = loopById.get("understanding");
+  const traffic = loopById.get("traffic");
+  const commerce = loopById.get("commerce");
+  const measurementCheck = findCheck(current, "measurement-readiness");
+  const trafficCheck = findCheck(current, "traffic");
+  const scoreDelta = current && previous ? current.overallScore - previous.overallScore : null;
+
+  const behaviorStatus: GeoVerificationDecisionStatus =
+    measurementCheck?.status === "fail" || traffic?.status === "blocked"
+      ? "blocked"
+      : effectTracking.behaviorSignal.status === "verified" || traffic?.status === "verified" || trafficCheck?.status === "pass"
+        ? "verified"
+        : measurementCheck?.status === "pass"
+          ? "watching"
+          : "waiting";
+
+  const commerceStatus: GeoVerificationDecisionStatus =
+    commerce?.status === "blocked"
+      ? "blocked"
+      : commerce?.status === "verified"
+        ? "verified"
+        : "waiting";
+
+  const timeStatus: GeoVerificationDecisionStatus =
+    !current ? "waiting" : previous ? "watching" : "waiting";
+
+  const items: GeoVerificationDecisionItem[] = [
+    {
+      id: "basic",
+      label: "基础有效",
+      status: verificationStatusFromLoop(technical),
+      signal: technical?.signal ?? "等待首次 GEO Audit",
+      nextStep: technical?.nextStep ?? "先运行一次 GEO Audit，建立可对比基线。",
+    },
+    {
+      id: "understanding",
+      label: "理解有效",
+      status: verificationStatusFromLoop(understanding),
+      signal: understanding?.signal ?? "等待品牌、商品和受众检查",
+      nextStep: understanding?.nextStep ?? "确认品牌、商品、受众和购买理由能被清晰读取。",
+    },
+    {
+      id: "behavior",
+      label: "行为有效",
+      status: behaviorStatus,
+      signal: effectTracking.behaviorSignal.label,
+      nextStep:
+        behaviorStatus === "blocked"
+          ? "先打开 GA4 诊断，确认页面浏览、点击、加购和结账事件能被读取。"
+          : behaviorStatus === "verified"
+            ? "继续用 GA4 对比页面浏览、点击和加购趋势。"
+            : "等待 GA4 累积 7/14/28 天数据后再判断趋势。",
+    },
+    {
+      id: "commerce",
+      label: "商业有效",
+      status: commerceStatus,
+      signal: commerce?.signal ?? "订单、结账和购买归因还未接入",
+      nextStep: commerce?.nextStep ?? "接入 add_to_cart、checkout、purchase 或订单数据后再判断收入影响。",
+    },
+    {
+      id: "time",
+      label: "时间有效",
+      status: timeStatus,
+      signal: scoreDelta === null ? "还没有上一份报告可对比" : `Score change ${signedNumber(scoreDelta)}`,
+      nextStep: previous
+        ? "按 7/14/28 天窗口继续对比 Audit、GA4 和后续 Search Console 信号。"
+        : "先保存当前报告作为基线，下次审计后再看变化。",
+    },
+  ];
+
+  const blockedCount = items.filter((item) => item.status === "blocked").length;
+  const verifiedCount = items.filter((item) => item.status === "verified").length;
+  const waitingCount = items.filter((item) => item.status === "waiting").length;
+
+  const headline = blockedCount
+    ? "先补齐验证入口"
+    : verifiedCount >= 3 && waitingCount <= 1
+      ? "可以开始观察效果"
+      : "先建立验证基线";
+
+  const primaryAction = blockedCount
+    ? "先检查 GA4 诊断与高优先级缺口，再重新运行 GEO Audit。"
+    : behaviorStatus === "verified"
+      ? "继续用 GA4 观察页面浏览、点击、加购和结账事件。"
+      : previous
+        ? "等待 GA4 与下一次审计对比，不急着判断最终效果。"
+        : "先保存本次结果作为基线，下一轮再对比变化。";
+
+  return {
+    headline,
+    summary: `${verifiedCount}/5 个验证层已成立，${blockedCount} 个阻塞，${waitingCount} 个等待数据。`,
+    primaryAction,
+    items,
+  };
 }
 
 export function getGeoExecutionTasks(

@@ -15,6 +15,7 @@ import {
   getGeoOptimizationPlan,
   getGeoStrategyReadiness,
   getGeoEffectTrackingSummary,
+  getGeoVerificationDecisionSummary,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -70,6 +71,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("TaskDetailDisclosure"),
   "GEO audit task cards should keep secondary task details folded by default"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("VerificationDecisionCard"),
+  "GEO audit page should summarize what can be verified now before showing detailed diagnostics"
 );
 
 assert.equal(
@@ -598,5 +604,51 @@ const blockedValidationLoop = getGeoValidationLoopItems({
 assert.equal(blockedValidationLoop[0].status, "blocked");
 assert.equal(blockedValidationLoop[1].status, "blocked");
 assert.equal(blockedValidationLoop[2].status, "blocked");
+
+const verificationDecision = getGeoVerificationDecisionSummary({
+  current: {
+    overallScore: 82,
+    checks: [
+      { id: "brand-entity", name: "Brand", score: 16, maxScore: 16, status: "pass", message: "", recommendation: "" },
+      { id: "offer-clarity", name: "Offer", score: 16, maxScore: 16, status: "pass", message: "", recommendation: "" },
+      { id: "audience-fit", name: "Audience", score: 12, maxScore: 12, status: "pass", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4", score: 12, maxScore: 12, status: "pass", message: "", recommendation: "" },
+      { id: "traffic", name: "Traffic", score: 4, maxScore: 8, status: "warn", message: "sessions pending", recommendation: "" },
+    ],
+  },
+  previous: {
+    overallScore: 74,
+    checks: [],
+  },
+  validationLoopItems: validationLoop,
+  effectTracking,
+});
+assert.equal(verificationDecision.items.length, 5);
+assert.deepEqual(
+  verificationDecision.items.map((item) => item.id),
+  ["basic", "understanding", "behavior", "commerce", "time"]
+);
+assert.equal(verificationDecision.items[0].status, "verified");
+assert.equal(verificationDecision.items[2].status, "verified");
+assert.equal(verificationDecision.items[3].status, "waiting");
+assert.equal(verificationDecision.items[4].status, "watching");
+assert.ok(verificationDecision.primaryAction.includes("GA4"));
+
+const blockedVerificationDecision = getGeoVerificationDecisionSummary({
+  current: {
+    overallScore: 60,
+    checks: [
+      { id: "brand-entity", name: "Brand", score: 4, maxScore: 16, status: "fail", message: "", recommendation: "" },
+      { id: "measurement-readiness", name: "GA4", score: 4, maxScore: 12, status: "fail", message: "", recommendation: "" },
+    ],
+  },
+  previous: null,
+  validationLoopItems: blockedValidationLoop,
+  effectTracking: firstEffectTracking,
+});
+assert.equal(blockedVerificationDecision.items[0].status, "blocked");
+assert.equal(blockedVerificationDecision.items[1].status, "blocked");
+assert.equal(blockedVerificationDecision.items[2].status, "blocked");
+assert.ok(blockedVerificationDecision.primaryAction.includes("GA4"));
 
 console.log("GEO display tests passed");
