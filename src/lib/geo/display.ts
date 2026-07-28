@@ -152,6 +152,13 @@ export type GeoTaskCompletionChecklistItem = {
   detail: string;
 };
 
+export type GeoAuditStageGate = {
+  id: "diagnose" | "fix" | "verify" | "observe";
+  label: string;
+  status: "done" | "current" | "waiting" | "blocked";
+  detail: string;
+};
+
 export type GeoAuditStatusSummaryItem = {
   id: "coverage" | "required" | "actions" | "validation";
   label: string;
@@ -949,6 +956,66 @@ export function getGeoTaskCompletionChecklist(task: Pick<GeoTaskCenterTask, "id"
       id: "rerun",
       label: "已复查结果",
       detail: task.validation,
+    },
+  ];
+}
+
+export function getGeoAuditStageGates({
+  hasReport,
+  taskGroups,
+  verificationDecision,
+}: {
+  hasReport: boolean;
+  taskGroups: GeoTaskCenterGroup[];
+  verificationDecision: GeoVerificationDecisionSummary;
+}): GeoAuditStageGate[] {
+  const tasks = taskGroups.flatMap((group) => group.tasks);
+  const openTaskCount = tasks.filter((task) => task.status !== "improved").length;
+  const blockedVerification = verificationDecision.items.find((item) => item.status === "blocked");
+  const behaviorLayer = verificationDecision.items.find((item) => item.id === "behavior");
+  const commerceLayer = verificationDecision.items.find((item) => item.id === "commerce");
+  const canObserve = behaviorLayer?.status === "verified" && commerceLayer?.status !== "blocked";
+
+  if (!hasReport) {
+    return [
+      { id: "diagnose", label: "诊断", status: "current", detail: "先运行 GEO Audit，建立第一份基线。" },
+      { id: "fix", label: "修复", status: "waiting", detail: "等诊断生成后再选择最高优先级任务。" },
+      { id: "verify", label: "验证", status: "waiting", detail: "等页面和 GA4 证据可读后再验证。" },
+      { id: "observe", label: "观察", status: "waiting", detail: "等有 7/14/28 天数据后再看趋势。" },
+    ];
+  }
+
+  return [
+    {
+      id: "diagnose",
+      label: "诊断",
+      status: "done",
+      detail: "已有 GEO Audit 基线，可以继续执行任务。",
+    },
+    {
+      id: "fix",
+      label: "修复",
+      status: openTaskCount > 0 ? "current" : "done",
+      detail:
+        openTaskCount > 0
+          ? `当前还有 ${openTaskCount} 个任务需要处理，先做最高优先级。`
+          : "当前没有明显待处理任务，保持页面稳定。",
+    },
+    {
+      id: "verify",
+      label: "验证",
+      status: blockedVerification ? "blocked" : "current",
+      detail: blockedVerification
+        ? `验证被 ${blockedVerification.label} 阻塞，优先检查 GA4 或证据入口。`
+        : verificationDecision.primaryAction,
+    },
+    {
+      id: "observe",
+      label: "观察",
+      status: canObserve && openTaskCount === 0 ? "current" : "waiting",
+      detail: canObserve
+        ? "行为信号已可读，按 7/14/28 天窗口观察趋势。"
+        : "等任务和验证入口稳定后，再进入趋势观察。",
     },
   ];
 }

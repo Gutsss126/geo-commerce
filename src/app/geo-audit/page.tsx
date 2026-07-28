@@ -17,6 +17,7 @@ import {
   getGeoReviewSteps,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
+  getGeoAuditStageGates,
   getGeoTaskCompletionChecklist,
   getGeoTaskCenterGroups,
   getGeoTodayActionPlan,
@@ -200,6 +201,56 @@ function TodayActionCard({ plan }: { plan: ReturnType<typeof getGeoTodayActionPl
               {index + 1}. {step.label}
             </p>
             <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{step.detail}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function StageGateStatusPill({
+  status,
+}: {
+  status: ReturnType<typeof getGeoAuditStageGates>[number]["status"];
+}) {
+  const styles = {
+    done: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    current: "border-blue-500/30 bg-blue-500/10 text-blue-200",
+    waiting: "border-slate-600/70 bg-slate-950/40 text-slate-300",
+    blocked: "border-rose-500/30 bg-rose-500/10 text-rose-200",
+  };
+  const labels = {
+    done: "完成",
+    current: "当前",
+    waiting: "等待",
+    blocked: "阻塞",
+  };
+
+  return <span className={`rounded border px-2 py-0.5 text-xs font-medium ${styles[status]}`}>{labels[status]}</span>;
+}
+
+function StageGateCard({ gates }: { gates: ReturnType<typeof getGeoAuditStageGates> }) {
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>阶段进度</CardTitle>
+          <CardDescription>按诊断、修复、验证、观察四步推进，避免跳过验证直接判断效果。</CardDescription>
+        </div>
+        <span className="rounded border border-slate-600/70 bg-slate-950/40 px-2 py-1 text-xs text-slate-300">
+          4 stages
+        </span>
+      </div>
+      <div className="mt-4 grid gap-2 md:grid-cols-4">
+        {gates.map((gate, index) => (
+          <div key={gate.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-100">
+                {index + 1}. {gate.label}
+              </p>
+              <StageGateStatusPill status={gate.status} />
+            </div>
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{gate.detail}</p>
           </div>
         ))}
       </div>
@@ -1394,6 +1445,11 @@ export default async function GeoAuditV2Page() {
     featuredTask,
     verificationDecision: verificationDecisionSummary,
   });
+  const stageGates = getGeoAuditStageGates({
+    hasReport: Boolean(report),
+    taskGroups: taskCenterGroups,
+    verificationDecision: verificationDecisionSummary,
+  });
   const detailsSummaryItems = [
     { label: "检查项", value: checks.length },
     { label: "证据缺口", value: scopeGaps.length },
@@ -1466,6 +1522,7 @@ export default async function GeoAuditV2Page() {
 
       <GeoAuditPageNav />
       <TodayActionCard plan={todayActionPlan} />
+      <StageGateCard gates={stageGates} />
 
       <div id="geo-audit-result" className="scroll-mt-4">
         <AuditDeltaCard

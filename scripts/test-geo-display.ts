@@ -18,6 +18,7 @@ import {
   getGeoVerificationDecisionSummary,
   getGeoTodayActionPlan,
   getGeoTaskCompletionChecklist,
+  getGeoAuditStageGates,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -88,6 +89,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("TodayActionCard"),
   "GEO audit page should expose one simple action plan before detailed task groups"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("StageGateCard"),
+  "GEO audit page should expose a compact stage gate overview"
 );
 
 assert.equal(
@@ -700,5 +706,36 @@ const taskTodayAction = getGeoTodayActionPlan({
 assert.equal(taskTodayAction.mode, "fix");
 assert.equal(taskTodayAction.primaryHref, "#geo-audit-tasks");
 assert.ok(taskTodayAction.summary.includes(taskCenterGroups[0].tasks[0].title));
+
+const firstStageGates = getGeoAuditStageGates({
+  hasReport: false,
+  taskGroups: [],
+  verificationDecision: blockedVerificationDecision,
+});
+assert.deepEqual(
+  firstStageGates.map((gate) => gate.id),
+  ["diagnose", "fix", "verify", "observe"]
+);
+assert.equal(firstStageGates[0].status, "current");
+assert.equal(firstStageGates[1].status, "waiting");
+
+const activeStageGates = getGeoAuditStageGates({
+  hasReport: true,
+  taskGroups: taskCenterGroups,
+  verificationDecision,
+});
+assert.equal(activeStageGates[0].status, "done");
+assert.equal(activeStageGates[1].status, "current");
+assert.equal(activeStageGates[2].status, "current");
+assert.equal(activeStageGates[3].status, "waiting");
+assert.ok(activeStageGates[1].detail.includes("任务"));
+
+const blockedStageGates = getGeoAuditStageGates({
+  hasReport: true,
+  taskGroups: [],
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(blockedStageGates[2].status, "blocked");
+assert.ok(blockedStageGates[2].detail.includes("GA4"));
 
 console.log("GEO display tests passed");
