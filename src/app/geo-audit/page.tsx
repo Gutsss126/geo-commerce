@@ -10,6 +10,7 @@ import {
   getGeoAuditStatusSummary,
   getGeoAuditScopeItems,
   getGeoCheckSourceLabel,
+  getGeoCheckGroupSummary,
   getGeoExecutionTasks,
   getGeoEffectTrackingSummary,
   getGeoFixWorkflow,
@@ -702,6 +703,50 @@ function SeoBasicsCard({ checks }: { checks: GeoCheckResult[] }) {
               <CheckStatusPill status={check.status} />
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-500">{check.message}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function CheckGroupSummaryCard({ checks }: { checks: GeoCheckResult[] }) {
+  const groups = getGeoCheckGroupSummary(checks);
+  const styles = {
+    pass: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    warn: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+    fail: "border-rose-500/30 bg-rose-500/5 text-rose-200",
+  };
+  const labels = {
+    pass: "通过",
+    warn: "待加强",
+    fail: "需处理",
+  };
+
+  if (checks.length === 0) return null;
+
+  return (
+    <Card>
+      <CardTitle>检查结果分组</CardTitle>
+      <CardDescription>先按用户能理解的 4 类看结果，再展开全部检查项逐条复核。</CardDescription>
+      <div className="mt-4 grid gap-3 lg:grid-cols-4">
+        {groups.map((group) => (
+          <div key={group.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-100">{group.label}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {group.passed}/{group.total || 0} 通过
+                </p>
+              </div>
+              <span className={`rounded border px-2 py-0.5 text-xs ${styles[group.status]}`}>{labels[group.status]}</span>
+            </div>
+            <p className="mt-3 line-clamp-3 text-xs leading-5 text-slate-500">{group.purpose}</p>
+            {group.topIssues.length > 0 && (
+              <p className="mt-3 line-clamp-2 text-xs leading-5 text-amber-200">
+                优先看：{group.topIssues.join(" / ")}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -1683,6 +1728,7 @@ export default async function GeoAuditV2Page() {
       )}
 
           <DetailGroupLabel title="检查项与商品" description="最后查看全部检查项、核心维度和低分商品，用于逐项复核。" />
+          <CheckGroupSummaryCard checks={checks} />
 
       {checks.length > 0 && (
         <Card>

@@ -167,6 +167,17 @@ export type GeoAuditConclusion = {
   notReady: string;
 };
 
+export type GeoCheckGroupSummaryItem = {
+  id: "access" | "understanding" | "trust" | "verification";
+  label: string;
+  purpose: string;
+  total: number;
+  passed: number;
+  attention: number;
+  status: "pass" | "warn" | "fail";
+  topIssues: string[];
+};
+
 export type GeoAuditStatusSummaryItem = {
   id: "coverage" | "required" | "actions" | "validation";
   label: string;
@@ -376,6 +387,76 @@ export function getGeoCheckSourceLabel(check: Pick<GeoCheckResult, "id">) {
   };
 
   return sourceById[check.id] ?? "Audit evidence";
+}
+
+function getGeoCheckGroupId(checkId: string): GeoCheckGroupSummaryItem["id"] {
+  const accessIds = new Set([
+    "canonical-url",
+    "internal-link-entry",
+    "llms-txt",
+    "seo-title-description",
+    "external-search-data",
+  ]);
+  const trustIds = new Set([
+    "policy-clarity",
+    "price-trust",
+    "buyer-proof",
+    "product-schema-readiness",
+  ]);
+  const verificationIds = new Set([
+    "measurement-readiness",
+    "traffic",
+    "conversion",
+    "commerce",
+  ]);
+
+  if (accessIds.has(checkId)) return "access";
+  if (trustIds.has(checkId)) return "trust";
+  if (verificationIds.has(checkId) || checkId.includes("ga4") || checkId.includes("traffic")) return "verification";
+  return "understanding";
+}
+
+export function getGeoCheckGroupSummary(checks: GeoCheckResult[]): GeoCheckGroupSummaryItem[] {
+  const definitions: Array<Pick<GeoCheckGroupSummaryItem, "id" | "label" | "purpose">> = [
+    {
+      id: "access",
+      label: "网站能不能被读到",
+      purpose: "确认搜索和 AI 能发现重要页面、标准链接、站点文件和基础 SEO 信息。",
+    },
+    {
+      id: "understanding",
+      label: "AI 能不能理解",
+      purpose: "确认品牌、商品、受众、场景、FAQ 和购买意图是否表达清楚。",
+    },
+    {
+      id: "trust",
+      label: "信任信息是否完整",
+      purpose: "确认价格、配送、退货、评价、商品结构化信息是否足够支撑购买判断。",
+    },
+    {
+      id: "verification",
+      label: "效果能不能验证",
+      purpose: "确认 GA4、点击、加购、结账或后续搜索数据能支持效果判断。",
+    },
+  ];
+
+  return definitions.map((definition) => {
+    const groupChecks = checks.filter((check) => getGeoCheckGroupId(check.id) === definition.id);
+    const passed = groupChecks.filter((check) => check.status === "pass").length;
+    const attentionChecks = groupChecks.filter((check) => check.status !== "pass");
+    const attention = attentionChecks.length;
+    const status: GeoCheckGroupSummaryItem["status"] =
+      groupChecks.length === 0 ? "warn" : attention === 0 ? "pass" : attention >= passed ? "fail" : "warn";
+
+    return {
+      ...definition,
+      total: groupChecks.length,
+      passed,
+      attention,
+      status,
+      topIssues: attentionChecks.slice(0, 2).map((check) => check.name),
+    };
+  });
 }
 
 export function getGeoScopeGaps(scopeItems: GeoAuditScopeItem[]): GeoScopeGap[] {

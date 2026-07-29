@@ -20,6 +20,7 @@ import {
   getGeoTaskCompletionChecklist,
   getGeoAuditStageGates,
   getGeoAuditConclusion,
+  getGeoCheckGroupSummary,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -100,6 +101,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("AuditConclusionCard"),
   "GEO audit page should expose a user-readable conclusion summary"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("CheckGroupSummaryCard"),
+  "GEO audit details should summarize checks into user-readable groups"
 );
 
 assert.equal(
@@ -539,6 +545,21 @@ assert.equal(getGeoCheckSourceLabel({ id: "measurement-readiness" }), "GA4 behav
 assert.equal(getGeoCheckSourceLabel({ id: "product-schema-readiness" }), "Product pages");
 assert.equal(getGeoCheckSourceLabel({ id: "policy-clarity" }), "Policy pages");
 assert.equal(getGeoCheckSourceLabel({ id: "offer-clarity" }), "Homepage and landing page");
+
+const checkGroupSummary = getGeoCheckGroupSummary([
+  { id: "canonical-url", name: "Canonical", score: 8, maxScore: 8, status: "pass", message: "", recommendation: "" },
+  { id: "brand-entity", name: "Brand", score: 12, maxScore: 16, status: "warn", message: "", recommendation: "" },
+  { id: "policy-clarity", name: "Policy", score: 0, maxScore: 8, status: "fail", message: "", recommendation: "" },
+  { id: "measurement-readiness", name: "GA4", score: 12, maxScore: 12, status: "pass", message: "", recommendation: "" },
+]);
+assert.deepEqual(
+  checkGroupSummary.map((group) => group.id),
+  ["access", "understanding", "trust", "verification"]
+);
+assert.equal(checkGroupSummary[0].passed, 1);
+assert.equal(checkGroupSummary[1].attention, 1);
+assert.equal(checkGroupSummary[2].attention, 1);
+assert.equal(checkGroupSummary[3].status, "pass");
 
 const scopeGaps = getGeoScopeGaps([
   {
