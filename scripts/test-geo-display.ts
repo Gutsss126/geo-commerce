@@ -827,6 +827,8 @@ const healthySystemItems = getGeoSystemHealthItems({
 });
 assert.equal(healthySystemItems.filter((item) => item.status === "ok").length, healthySystemItems.length);
 assert.ok(healthySystemItems.some((item) => item.href === "/diagnostics/ga4"));
+assert.ok(healthySystemItems.every((item) => item.fixSteps.length >= 2));
+assert.ok(healthySystemItems.every((item) => item.verify.length > 0));
 
 const missingOAuthSystemItems = getGeoSystemHealthItems({
   hasDatabaseUrl: true,
@@ -837,6 +839,8 @@ const missingOAuthSystemItems = getGeoSystemHealthItems({
 });
 assert.ok(missingOAuthSystemItems.some((item) => item.status === "warn"));
 assert.ok(missingOAuthSystemItems.some((item) => item.message.includes("OAuth")));
+assert.ok(missingOAuthSystemItems.find((item) => item.id === "google-oauth")?.fixSteps.some((step) => step.includes("GOOGLE_OAUTH")));
+assert.ok(missingOAuthSystemItems.find((item) => item.id === "app-url")?.fixSteps.some((step) => step.includes("NEXT_PUBLIC_APP_URL")));
 
 const firstStageGates = getGeoAuditStageGates({
   hasReport: false,

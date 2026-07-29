@@ -179,6 +179,8 @@ export type GeoSystemHealthItem = {
   message: string;
   actionLabel: string;
   href: string;
+  fixSteps: string[];
+  verify: string;
 };
 
 export type GeoTaskCompletionChecklistItem = {
@@ -1076,6 +1078,12 @@ export function getGeoSystemHealthItems({
       message: hasDatabaseUrl ? "已配置 DATABASE_URL，可读取站点、商品和审计报告。" : "缺少 DATABASE_URL，线上页面可能无法读取审计数据。",
       actionLabel: "查看详细诊断",
       href: "#geo-audit-details",
+      fixSteps: [
+        "在 Vercel Project Settings -> Environment Variables 检查 DATABASE_URL。",
+        "确认值是 Neon pooled PostgreSQL 连接串，并包含 sslmode=require。",
+        "修改后重新部署，再打开 /geo-audit 确认页面可读取报告。",
+      ],
+      verify: "打开 /api/health，确认数据库状态正常；再刷新 GEO Audit。",
     },
     {
       id: "ga4-data",
@@ -1084,6 +1092,12 @@ export function getGeoSystemHealthItems({
       message: hasGa4PropertyId ? "已配置 GA4_PROPERTY_ID，可用于读取行为数据。" : "缺少 GA4_PROPERTY_ID，GEO 无法判断访问与行为效果。",
       actionLabel: "查看 GA4",
       href: "/diagnostics/ga4",
+      fixSteps: [
+        "在 GA4 管理 -> 媒体资源详情复制数字 Property ID。",
+        "在 Vercel 写入 GA4_PROPERTY_ID，注意只填数字，不要填 KEY=value。",
+        "重新部署后打开 GA4 诊断页检查读取状态。",
+      ],
+      verify: "GA4 诊断页不再提示 Property ID 缺失或格式错误。",
     },
     {
       id: "google-oauth",
@@ -1092,6 +1106,12 @@ export function getGeoSystemHealthItems({
       message: oauthReady ? "OAuth Client 和回调地址已配置，可使用登录授权读取 GA4。" : "OAuth 配置不完整，重新授权或换账号时可能失败。",
       actionLabel: "查看 GA4",
       href: "/diagnostics/ga4",
+      fixSteps: [
+        "在 Google Cloud OAuth Client 复制 Web Client ID 和 Secret。",
+        "在 Vercel 写入 GOOGLE_OAUTH_CLIENT_ID 与 GOOGLE_OAUTH_CLIENT_SECRET。",
+        "确认 Google Cloud Authorized redirect URIs 包含线上 callback 地址。",
+      ],
+      verify: "点击 GA4 诊断页的重新授权，可以进入 Google 授权流程且不报 invalid_request。",
     },
     {
       id: "app-url",
@@ -1100,6 +1120,12 @@ export function getGeoSystemHealthItems({
       message: appUrlLooksProduction ? "NEXT_PUBLIC_APP_URL 看起来是线上 HTTPS 地址。" : "应用 URL 可能仍是本地地址，OAuth 回调容易跳回 localhost。",
       actionLabel: "查看 GA4",
       href: "/diagnostics/ga4",
+      fixSteps: [
+        "在 Vercel 写入 NEXT_PUBLIC_APP_URL=https://geo-commerce-o2lp.vercel.app。",
+        "同步把 GOOGLE_OAUTH_REDIRECT_URI 设置为线上 /api/integrations/google/oauth/callback。",
+        "重新部署后从线上 /diagnostics/ga4 发起授权。",
+      ],
+      verify: "Google 授权完成后回到线上域名，而不是 localhost 或 127.0.0.1。",
     },
   ];
 }

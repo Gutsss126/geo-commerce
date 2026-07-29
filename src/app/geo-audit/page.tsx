@@ -1600,14 +1600,27 @@ function SystemHealthCard({ items }: { items: ReturnType<typeof getGeoSystemHeal
       </div>
       <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
         {items.map((item) => (
-          <a key={item.id} href={item.href} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3 hover:bg-slate-800/60">
+          <div key={item.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold text-slate-100">{item.label}</p>
               <span className={`rounded border px-2 py-0.5 text-xs ${styles[item.status]}`}>{labels[item.status]}</span>
             </div>
             <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">{item.message}</p>
-            <p className="mt-3 text-xs font-medium text-blue-200">{item.actionLabel}</p>
-          </a>
+            <a href={item.href} className="mt-3 inline-flex text-xs font-medium text-blue-200 hover:text-blue-100">
+              {item.actionLabel}
+            </a>
+            <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/50 p-2">
+              <summary className="cursor-pointer text-xs font-medium text-slate-200">修复步骤</summary>
+              <ol className="mt-2 space-y-1 text-xs leading-5 text-slate-500">
+                {item.fixSteps.map((step, index) => (
+                  <li key={step}>
+                    {index + 1}. {step}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-xs leading-5 text-emerald-200">{item.verify}</p>
+            </details>
+          </div>
         ))}
       </div>
     </Card>
