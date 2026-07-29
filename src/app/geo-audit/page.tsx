@@ -14,6 +14,7 @@ import {
   getGeoExecutionTasks,
   getGeoEffectTrackingSummary,
   getGeoFixWorkflow,
+  getGeoFocusTaskSummary,
   getGeoOptimizationPlan,
   getGeoReviewSteps,
   getGeoScopeGaps,
@@ -1230,6 +1231,49 @@ function TaskCompletionChecklist({
   );
 }
 
+function FocusTaskCard({ summary }: { summary: ReturnType<typeof getGeoFocusTaskSummary> }) {
+  if (!summary) return null;
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle>当前焦点任务</CardTitle>
+            <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">
+              {summary.positionLabel}
+            </span>
+          </div>
+          <CardDescription>先完成这一项，再进入完整任务中心查看其它动作。</CardDescription>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <TaskStatusPill status={summary.task.status} />
+          <PriorityPill priority={summary.task.priority} />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_.8fr]">
+        <div className="rounded-lg border border-blue-500/25 bg-blue-500/10 p-4">
+          <p className="text-xs font-medium text-blue-200">{summary.groupLabel}</p>
+          <p className="mt-2 text-base font-semibold text-slate-100">{summary.task.title}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">{summary.action}</p>
+          <p className="mt-3 text-xs leading-5 text-slate-500">{summary.reason}</p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
+          <p className="text-xs font-medium text-emerald-200">完成后确认</p>
+          <p className="mt-2 text-xs leading-5 text-slate-400">{summary.validation}</p>
+          <a
+            href="#geo-audit-tasks"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-600/70 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+          >
+            查看任务中心
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -1565,6 +1609,7 @@ export default async function GeoAuditV2Page() {
     domain: primarySite?.domain,
   });
   const featuredTask = taskCenterGroups.flatMap((group) => group.tasks)[0] ?? null;
+  const focusTaskSummary = getGeoFocusTaskSummary(taskCenterGroups);
   const statusSummary = getGeoAuditStatusSummary({
     scopeItems,
     scopeGaps,
@@ -1690,6 +1735,7 @@ export default async function GeoAuditV2Page() {
       </div>
       <EffectTrackingCard summary={effectTrackingSummary} />
       <VerificationDecisionCard summary={verificationDecisionSummary} />
+      <FocusTaskCard summary={focusTaskSummary} />
       <div id="geo-audit-tasks" className="scroll-mt-4">
         <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
       </div>

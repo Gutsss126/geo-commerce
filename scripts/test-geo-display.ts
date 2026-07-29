@@ -22,6 +22,7 @@ import {
   getGeoAuditConclusion,
   getGeoCheckGroupSummary,
   getGeoAuditFaqItems,
+  getGeoFocusTaskSummary,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -37,6 +38,11 @@ for (const sectionId of ["geo-audit-result", "geo-audit-tasks", "geo-audit-revie
 assert.ok(
   geoAuditPageSource.includes("topTasks[0]"),
   "GEO audit task center should highlight the first task as the starting point"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("FocusTaskCard"),
+  "GEO audit page should show a single focus task before the full task center"
 );
 
 assert.ok(
@@ -406,6 +412,13 @@ assert.equal(taskCenterGroups[0].tasks[0].source, "检查范围 / 证据缺口")
 assert.ok(taskCenterGroups[1].tasks[0].source.includes("Page source"));
 assert.ok(taskCenterGroups[1].tasks[0].impact.includes("搜索"));
 assert.ok(taskCenterGroups[2].tasks[0].explanation.includes("验证层"));
+
+const focusTask = getGeoFocusTaskSummary(taskCenterGroups);
+assert.ok(focusTask);
+assert.equal(focusTask?.task.id, "scope-crawl-files");
+assert.equal(focusTask?.positionLabel, "1 / 4");
+assert.ok(focusTask?.reason.includes("高优先级"));
+assert.ok(focusTask?.validation.includes("重新运行"));
 
 const completionChecklist = getGeoTaskCompletionChecklist(taskCenterGroups[1].tasks[1]);
 assert.deepEqual(

@@ -146,6 +146,15 @@ export type GeoTaskCenterGroup = {
   tasks: GeoTaskCenterTask[];
 };
 
+export type GeoFocusTaskSummary = {
+  task: GeoTaskCenterTask;
+  groupLabel: string;
+  positionLabel: string;
+  reason: string;
+  action: string;
+  validation: string;
+};
+
 export type GeoTaskCompletionChecklistItem = {
   id: "publish" | "verify" | "rerun";
   label: string;
@@ -1030,6 +1039,31 @@ export function getGeoTaskCenterGroups({
       tasks: validationTasks,
     },
   ];
+}
+
+export function getGeoFocusTaskSummary(taskGroups: GeoTaskCenterGroup[]): GeoFocusTaskSummary | null {
+  const tasks = taskGroups.flatMap((group) => group.tasks.map((task) => ({ task, groupLabel: group.label })));
+  const firstTask = tasks[0] ?? null;
+
+  if (!firstTask) {
+    return null;
+  }
+
+  const priorityReason =
+    firstTask.task.priority === "high"
+      ? "这是当前最高优先级任务，先处理它可以减少后续判断的不确定性。"
+      : firstTask.task.status === "todo"
+        ? "这是当前仍待处理的任务，先把它完成再看分数变化。"
+        : "这是当前最适合复查的任务，先确认它是否已经产生可见变化。";
+
+  return {
+    task: firstTask.task,
+    groupLabel: firstTask.groupLabel,
+    positionLabel: `1 / ${tasks.length}`,
+    reason: priorityReason,
+    action: firstTask.task.action,
+    validation: firstTask.task.validation,
+  };
 }
 
 export function getGeoTaskCompletionChecklist(task: Pick<GeoTaskCenterTask, "id" | "action" | "validation">): GeoTaskCompletionChecklistItem[] {
