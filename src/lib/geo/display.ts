@@ -155,6 +155,15 @@ export type GeoFocusTaskSummary = {
   validation: string;
 };
 
+export type GeoAuditNoticeItem = {
+  id: "ga4-blocked" | "baseline" | "waiting-data" | "no-open-task";
+  tone: "warn" | "info" | "success";
+  title: string;
+  message: string;
+  actionLabel: string;
+  href: string;
+};
+
 export type GeoTaskCompletionChecklistItem = {
   id: "publish" | "verify" | "rerun";
   label: string;
@@ -881,6 +890,80 @@ export function getGeoTodayActionPlan({
       { label: "再做复查", detail: "下一次审计再判断是否需要继续优化。" },
     ],
   };
+}
+
+export function getGeoAuditNoticeItems({
+  hasReport,
+  hasPreviousReport,
+  focusTask,
+  verificationDecision,
+}: {
+  hasReport: boolean;
+  hasPreviousReport: boolean;
+  focusTask: GeoFocusTaskSummary | null;
+  verificationDecision: GeoVerificationDecisionSummary;
+}): GeoAuditNoticeItem[] {
+  if (!hasReport) {
+    return [
+      {
+        id: "baseline",
+        tone: "info",
+        title: "先建立第一份基线",
+        message: "还没有可对比的 GEO Audit，先运行一次诊断，之后每次优化才有参照物。",
+        actionLabel: "运行诊断",
+        href: "#geo-audit-result",
+      },
+    ];
+  }
+
+  const behavior = verificationDecision.items.find((item) => item.id === "behavior");
+  const notices: GeoAuditNoticeItem[] = [];
+
+  if (behavior?.status === "blocked") {
+    notices.push({
+      id: "ga4-blocked",
+      tone: "warn",
+      title: "GA4 阻塞了效果判断",
+      message: "页面分数可以继续看，但访问、点击、加购和结账效果暂时不能证明。先检查 GA4 诊断。",
+      actionLabel: "查看 GA4",
+      href: "/diagnostics/ga4",
+    });
+  }
+
+  if (!hasPreviousReport) {
+    notices.push({
+      id: "baseline",
+      tone: "info",
+      title: "当前是基线，不急着判断涨跌",
+      message: "这份基线报告主要用于记录当前状态。下一次审计后，再看分数、任务和 GA4 行为是否真的变化。",
+      actionLabel: "查看复查步骤",
+      href: "#geo-audit-review",
+    });
+  }
+
+  if (behavior?.status === "watching" || behavior?.status === "waiting") {
+    notices.push({
+      id: "waiting-data",
+      tone: "info",
+      title: "数据正在等待窗口里",
+      message: "GA4 或历史对比需要 7/14/28 天窗口，短期 0 或波动不代表优化失败。",
+      actionLabel: "查看验证判断",
+      href: "#geo-audit-review",
+    });
+  }
+
+  if (!focusTask) {
+    notices.push({
+      id: "no-open-task",
+      tone: "success",
+      title: "当前没有必须立刻处理的任务",
+      message: "保持页面、Schema、站点文件和 GA4 稳定，按复查节奏观察下一轮变化。",
+      actionLabel: "查看复查步骤",
+      href: "#geo-audit-review",
+    });
+  }
+
+  return notices.slice(0, 3);
 }
 
 export function getGeoExecutionTasks(

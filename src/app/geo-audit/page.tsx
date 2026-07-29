@@ -21,6 +21,7 @@ import {
   getGeoStrategyReadiness,
   getGeoAuditConclusion,
   getGeoAuditFaqItems,
+  getGeoAuditNoticeItems,
   getGeoAuditStageGates,
   getGeoTaskCompletionChecklist,
   getGeoTaskCenterGroups,
@@ -1305,6 +1306,36 @@ function FocusTaskCard({ summary }: { summary: ReturnType<typeof getGeoFocusTask
   );
 }
 
+function AuditNoticeStrip({ items }: { items: ReturnType<typeof getGeoAuditNoticeItems> }) {
+  const toneStyles = {
+    warn: "border-amber-500/30 bg-amber-500/5 text-amber-100",
+    info: "border-blue-500/30 bg-blue-500/5 text-blue-100",
+    success: "border-emerald-500/30 bg-emerald-500/5 text-emerald-100",
+  };
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="grid gap-2 lg:grid-cols-3">
+      {items.map((item) => (
+        <a
+          key={item.id}
+          href={item.href}
+          className={`rounded-xl border p-3 transition hover:bg-slate-800/60 ${toneStyles[item.tone]}`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">{item.title}</p>
+              <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">{item.message}</p>
+            </div>
+            <span className="shrink-0 rounded border border-current/30 px-2 py-1 text-xs">{item.actionLabel}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function AuditStatusSummaryCard({ items }: { items: ReturnType<typeof getGeoAuditStatusSummary> }) {
   if (items.length === 0) return null;
 
@@ -1616,6 +1647,12 @@ export default async function GeoAuditV2Page() {
     stageGates,
     verificationDecision: verificationDecisionSummary,
   });
+  const auditNotices = getGeoAuditNoticeItems({
+    hasReport: Boolean(report),
+    hasPreviousReport: Boolean(previousReport),
+    focusTask: focusTaskSummary,
+    verificationDecision: verificationDecisionSummary,
+  });
   const faqItems = getGeoAuditFaqItems({
     conclusion: auditConclusion,
     verificationDecision: verificationDecisionSummary,
@@ -1694,6 +1731,7 @@ export default async function GeoAuditV2Page() {
       <GeoAuditPageNav />
       <AuditConclusionCard conclusion={auditConclusion} />
       <TodayActionCard plan={todayActionPlan} />
+      <AuditNoticeStrip items={auditNotices} />
       <StageGateCard gates={stageGates} />
 
       <div id="geo-audit-result" className="scroll-mt-4">

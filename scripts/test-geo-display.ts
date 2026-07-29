@@ -23,6 +23,7 @@ import {
   getGeoCheckGroupSummary,
   getGeoAuditFaqItems,
   getGeoFocusTaskSummary,
+  getGeoAuditNoticeItems,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -43,6 +44,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("FocusTaskCard"),
   "GEO audit page should show a single focus task before the full task center"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("AuditNoticeStrip"),
+  "GEO audit page should explain waiting and empty states near the workbench"
 );
 
 assert.ok(
@@ -748,6 +754,24 @@ const blockedTodayAction = getGeoTodayActionPlan({
 assert.equal(blockedTodayAction.mode, "verify");
 assert.equal(blockedTodayAction.primaryHref, "/diagnostics/ga4");
 assert.ok(blockedTodayAction.summary.includes("GA4"));
+
+const waitingNotices = getGeoAuditNoticeItems({
+  hasReport: true,
+  hasPreviousReport: false,
+  focusTask: null,
+  verificationDecision,
+});
+assert.ok(waitingNotices.some((item) => item.id === "baseline"));
+assert.ok(waitingNotices.some((item) => item.message.includes("基线")));
+
+const blockedNotices = getGeoAuditNoticeItems({
+  hasReport: true,
+  hasPreviousReport: false,
+  focusTask: null,
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(blockedNotices[0].id, "ga4-blocked");
+assert.equal(blockedNotices[0].href, "/diagnostics/ga4");
 
 const taskTodayAction = getGeoTodayActionPlan({
   hasReport: true,
