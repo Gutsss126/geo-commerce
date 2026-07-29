@@ -17,6 +17,7 @@ import {
   getGeoFocusTaskSummary,
   getGeoOptimizationPlan,
   getGeoReviewSteps,
+  getGeoReviewActionItems,
   getGeoScopeGaps,
   getGeoStrategyReadiness,
   getGeoAuditConclusion,
@@ -1525,6 +1526,56 @@ function ReviewStepsCard({ steps }: { steps: ReturnType<typeof getGeoReviewSteps
   );
 }
 
+function ReviewActionBar({
+  actions,
+  siteId,
+}: {
+  actions: ReturnType<typeof getGeoReviewActionItems>;
+  siteId?: string;
+}) {
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-slate-950/40 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-100">复查动作</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">做完修改后，优先按这里的按钮复查，不需要回头找入口。</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {actions.map((action) =>
+            action.kind === "audit" && siteId ? (
+              <form key={action.id} action={runSiteAudit.bind(null, siteId)}>
+                <button
+                  type="submit"
+                  className="rounded border border-blue-500/40 px-3 py-1.5 text-xs font-medium text-blue-200 hover:bg-blue-500/10"
+                >
+                  {action.label}
+                </button>
+              </form>
+            ) : action.href ? (
+              <a
+                key={action.id}
+                href={action.href}
+                className="rounded border border-slate-600/70 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800"
+              >
+                {action.label}
+              </a>
+            ) : null
+          )}
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {actions.map((action) => (
+          <p key={`${action.id}-helper`} className="rounded border border-[var(--border)] bg-slate-950/50 px-3 py-2 text-xs leading-5 text-slate-500">
+            {action.helper}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AuditFaqCard({ items }: { items: ReturnType<typeof getGeoAuditFaqItems> }) {
   const toneStyles = {
     info: "border-blue-500/30 bg-blue-500/5 text-blue-200",
@@ -1630,6 +1681,11 @@ export default async function GeoAuditV2Page() {
     previous: previousReport,
     validationLoopItems,
     effectTracking: effectTrackingSummary,
+  });
+  const reviewActions = getGeoReviewActionItems({
+    hasReport: Boolean(report),
+    focusTask: focusTaskSummary,
+    verificationDecision: verificationDecisionSummary,
   });
   const todayActionPlan = getGeoTodayActionPlan({
     hasReport: Boolean(report),
@@ -1751,6 +1807,9 @@ export default async function GeoAuditV2Page() {
         <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
       </div>
       <div id="geo-audit-review" className="scroll-mt-4">
+        <ReviewActionBar actions={reviewActions} siteId={primarySite?.id} />
+      </div>
+      <div className="scroll-mt-4">
         <ReviewStepsCard steps={reviewSteps} />
       </div>
       <AuditFaqCard items={faqItems} />

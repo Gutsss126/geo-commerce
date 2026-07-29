@@ -164,6 +164,14 @@ export type GeoAuditNoticeItem = {
   href: string;
 };
 
+export type GeoReviewActionItem = {
+  id: "ga4" | "rerun" | "task" | "wait";
+  kind: "link" | "audit";
+  label: string;
+  helper: string;
+  href?: string;
+};
+
 export type GeoTaskCompletionChecklistItem = {
   id: "publish" | "verify" | "rerun";
   label: string;
@@ -964,6 +972,75 @@ export function getGeoAuditNoticeItems({
   }
 
   return notices.slice(0, 3);
+}
+
+export function getGeoReviewActionItems({
+  hasReport,
+  focusTask,
+  verificationDecision,
+}: {
+  hasReport: boolean;
+  focusTask: GeoFocusTaskSummary | null;
+  verificationDecision: GeoVerificationDecisionSummary;
+}): GeoReviewActionItem[] {
+  if (!hasReport) {
+    return [
+      {
+        id: "rerun",
+        kind: "audit",
+        label: "运行第一份 GEO Audit",
+        helper: "先建立基线，后续才能判断变化。",
+      },
+    ];
+  }
+
+  const behavior = verificationDecision.items.find((item) => item.id === "behavior");
+
+  if (behavior?.status === "blocked") {
+    return [
+      {
+        id: "ga4",
+        kind: "link",
+        label: "先看 GA4 诊断",
+        helper: "行为数据没打通前，暂时不要判断优化效果。",
+        href: "/diagnostics/ga4",
+      },
+      {
+        id: "rerun",
+        kind: "audit",
+        label: "修复后重新运行",
+        helper: "确认 GA4 正常后，再生成一份新审计。",
+      },
+    ];
+  }
+
+  if (focusTask) {
+    return [
+      {
+        id: "rerun",
+        kind: "audit",
+        label: "完成后重新运行",
+        helper: focusTask.validation,
+      },
+      {
+        id: "task",
+        kind: "link",
+        label: "回到焦点任务",
+        helper: focusTask.task.title,
+        href: "#geo-audit-tasks",
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "wait",
+      kind: "link",
+      label: "查看等待窗口",
+      helper: "没有必须立刻处理的任务时，按 7/14/28 天节奏观察。",
+      href: "#geo-audit-review",
+    },
+  ];
 }
 
 export function getGeoExecutionTasks(

@@ -24,6 +24,7 @@ import {
   getGeoAuditFaqItems,
   getGeoFocusTaskSummary,
   getGeoAuditNoticeItems,
+  getGeoReviewActionItems,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -49,6 +50,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("AuditNoticeStrip"),
   "GEO audit page should explain waiting and empty states near the workbench"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("ReviewActionBar"),
+  "GEO audit review area should expose concrete review actions"
 );
 
 assert.ok(
@@ -773,6 +779,14 @@ const blockedNotices = getGeoAuditNoticeItems({
 assert.equal(blockedNotices[0].id, "ga4-blocked");
 assert.equal(blockedNotices[0].href, "/diagnostics/ga4");
 
+const blockedReviewActions = getGeoReviewActionItems({
+  hasReport: true,
+  focusTask: null,
+  verificationDecision: blockedVerificationDecision,
+});
+assert.equal(blockedReviewActions[0].id, "ga4");
+assert.equal(blockedReviewActions[0].href, "/diagnostics/ga4");
+
 const taskTodayAction = getGeoTodayActionPlan({
   hasReport: true,
   featuredTask: taskCenterGroups[0].tasks[0],
@@ -781,6 +795,22 @@ const taskTodayAction = getGeoTodayActionPlan({
 assert.equal(taskTodayAction.mode, "fix");
 assert.equal(taskTodayAction.primaryHref, "#geo-audit-tasks");
 assert.ok(taskTodayAction.summary.includes(taskCenterGroups[0].tasks[0].title));
+
+const taskReviewActions = getGeoReviewActionItems({
+  hasReport: true,
+  focusTask,
+  verificationDecision,
+});
+assert.equal(taskReviewActions[0].id, "rerun");
+assert.equal(taskReviewActions[0].kind, "audit");
+assert.ok(taskReviewActions.some((item) => item.id === "task"));
+
+const waitingReviewActions = getGeoReviewActionItems({
+  hasReport: true,
+  focusTask: null,
+  verificationDecision,
+});
+assert.ok(waitingReviewActions.some((item) => item.id === "wait"));
 
 const firstStageGates = getGeoAuditStageGates({
   hasReport: false,
