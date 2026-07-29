@@ -36,13 +36,18 @@ for (const sectionId of ["geo-audit-result", "geo-audit-tasks", "geo-audit-revie
 }
 
 assert.ok(
-  geoAuditPageSource.includes("topTasks[0]"),
-  "GEO audit task center should highlight the first task as the starting point"
+  !geoAuditPageSource.includes("topTasks[0] &&"),
+  "GEO audit task center should not duplicate the focus task highlight"
 );
 
 assert.ok(
   geoAuditPageSource.includes("FocusTaskCard"),
   "GEO audit page should show a single focus task before the full task center"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("TaskCompactDetails"),
+  "GEO audit task center should fold secondary explanations and completion details"
 );
 
 assert.ok(

@@ -1231,6 +1231,37 @@ function TaskCompletionChecklist({
   );
 }
 
+function TaskCompactDetails({
+  task,
+}: {
+  task: ReturnType<typeof getGeoTaskCenterGroups>[number]["tasks"][number];
+}) {
+  return (
+    <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
+      <summary className="cursor-pointer text-xs font-medium text-slate-200">查看细节与完成标准</summary>
+      <div className="mt-3 space-y-3">
+        <p className="rounded border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs leading-5 text-blue-100">
+          {task.explanation}
+        </p>
+        <TaskCompletionChecklist task={task} />
+        <TaskDetailDisclosure
+          goal={task.goal}
+          action={task.action}
+          validation={task.validation}
+          source={task.source}
+          impact={task.impact}
+        />
+        {task.copyBlock && (
+          <details className="rounded border border-[var(--border)] bg-slate-950/70 p-3">
+            <summary className="cursor-pointer text-xs font-medium text-emerald-200">可复制内容</summary>
+            <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{task.copyBlock}</pre>
+          </details>
+        )}
+      </div>
+    </details>
+  );
+}
+
 function FocusTaskCard({ summary }: { summary: ReturnType<typeof getGeoFocusTaskSummary> }) {
   if (!summary) return null;
 
@@ -1379,21 +1410,6 @@ function TaskCenterCard({
           {allTasks.length} tasks
         </span>
       </div>
-      {topTasks[0] && (
-        <div className="mt-4 rounded-lg border border-blue-500/25 bg-blue-500/10 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-200">从这里开始</p>
-              <p className="mt-1 font-medium text-slate-100">{topTasks[0].title}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-400">{topTasks[0].action}</p>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <TaskStatusPill status={topTasks[0].status} />
-              <PriorityPill priority={topTasks[0].priority} />
-            </div>
-          </div>
-        </div>
-      )}
       <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {topTasks.map((task, index) => (
           <div key={`${task.id}-${task.title}`} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-4">
@@ -1406,51 +1422,8 @@ function TaskCenterCard({
               <p className="text-xs text-slate-500">{task.target}</p>
               <TaskStatusPill status={task.status} />
             </div>
-            <p className="mt-3 rounded border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs leading-5 text-blue-100">
-              {task.explanation}
-            </p>
-            <TaskCompletionChecklist task={task} />
-            <div className="hidden mt-3 space-y-2 text-xs leading-5 text-slate-400">
-              <p>
-                <span className="text-slate-300">目标：</span>
-                {task.goal}
-              </p>
-              <p>
-                <span className="text-slate-300">动作：</span>
-                {task.action}
-              </p>
-              <p>
-                <span className="text-slate-300">验证：</span>
-                {task.validation}
-              </p>
-            </div>
             <TaskReviewActions taskId={task.id} siteId={siteId} />
-            <TaskDetailDisclosure
-              goal={task.goal}
-              action={task.action}
-              validation={task.validation}
-              source={task.source}
-              impact={task.impact}
-            />
-            <details className="hidden mt-3 rounded border border-[var(--border)] bg-slate-950/60 p-3">
-              <summary className="cursor-pointer text-xs font-medium text-slate-200">查看来源和影响</summary>
-              <div className="mt-3 space-y-2 text-xs leading-5 text-slate-400">
-                <p>
-                  <span className="text-slate-300">来源：</span>
-                  {task.source}
-                </p>
-                <p>
-                  <span className="text-slate-300">影响：</span>
-                  {task.impact}
-                </p>
-              </div>
-            </details>
-            {task.copyBlock && (
-              <details className="mt-3 rounded border border-[var(--border)] bg-slate-950/70 p-3">
-                <summary className="cursor-pointer text-xs font-medium text-emerald-200">可复制内容</summary>
-                <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-300">{task.copyBlock}</pre>
-              </details>
-            )}
+            <TaskCompactDetails task={task} />
           </div>
         ))}
       </div>
