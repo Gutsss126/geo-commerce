@@ -19,6 +19,7 @@ import {
   getGeoScopeGaps,
   getGeoStrategyReadiness,
   getGeoAuditConclusion,
+  getGeoAuditFaqItems,
   getGeoAuditStageGates,
   getGeoTaskCompletionChecklist,
   getGeoTaskCenterGroups,
@@ -1476,6 +1477,50 @@ function ReviewStepsCard({ steps }: { steps: ReturnType<typeof getGeoReviewSteps
   );
 }
 
+function AuditFaqCard({ items }: { items: ReturnType<typeof getGeoAuditFaqItems> }) {
+  const toneStyles = {
+    info: "border-blue-500/30 bg-blue-500/5 text-blue-200",
+    warn: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+    action: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+  };
+  const toneLabels = {
+    info: "解释",
+    warn: "注意",
+    action: "行动",
+  };
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>常见疑问</CardTitle>
+          <CardDescription>把分数、GA4 和等待窗口翻译成运营能直接理解的解释。</CardDescription>
+        </div>
+        <span className="rounded border border-slate-600/70 bg-slate-950/40 px-2 py-1 text-xs text-slate-300">
+          {items.length} FAQ
+        </span>
+      </div>
+      <div className="mt-4 space-y-2">
+        {items.map((item) => (
+          <details key={item.id} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+              <span className="text-sm font-medium text-slate-100">{item.question}</span>
+              <span className={`rounded border px-2 py-0.5 text-xs ${toneStyles[item.tone]}`}>
+                {toneLabels[item.tone]}
+              </span>
+            </summary>
+            <p className="mt-3 text-xs leading-5 text-slate-500">{item.answer}</p>
+          </details>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default async function GeoAuditV2Page() {
   const sites = await prisma.site.findMany({
     include: {
@@ -1552,6 +1597,11 @@ export default async function GeoAuditV2Page() {
     taskGroups: taskCenterGroups,
     stageGates,
     verificationDecision: verificationDecisionSummary,
+  });
+  const faqItems = getGeoAuditFaqItems({
+    conclusion: auditConclusion,
+    verificationDecision: verificationDecisionSummary,
+    hasPreviousReport: Boolean(previousReport),
   });
   const detailsSummaryItems = [
     { label: "检查项", value: checks.length },
@@ -1646,6 +1696,7 @@ export default async function GeoAuditV2Page() {
       <div id="geo-audit-review" className="scroll-mt-4">
         <ReviewStepsCard steps={reviewSteps} />
       </div>
+      <AuditFaqCard items={faqItems} />
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-slate-950/30 p-3">
         {detailsSummaryItems.map((item) => (

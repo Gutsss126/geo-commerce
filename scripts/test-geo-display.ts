@@ -21,6 +21,7 @@ import {
   getGeoAuditStageGates,
   getGeoAuditConclusion,
   getGeoCheckGroupSummary,
+  getGeoAuditFaqItems,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -106,6 +107,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("CheckGroupSummaryCard"),
   "GEO audit details should summarize checks into user-readable groups"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("AuditFaqCard"),
+  "GEO audit page should include folded explanations for common user questions"
 );
 
 assert.equal(
@@ -794,5 +800,22 @@ const activeConclusion = getGeoAuditConclusion({
 assert.equal(activeConclusion.tone, "action");
 assert.ok(activeConclusion.nextAction.includes(taskCenterGroups[0].tasks[0].title));
 assert.ok(activeConclusion.notReady.includes("7/14/28"));
+
+const faqItems = getGeoAuditFaqItems({
+  conclusion: activeConclusion,
+  verificationDecision,
+  hasPreviousReport: true,
+});
+assert.ok(faqItems.length >= 4);
+assert.ok(faqItems.some((item) => item.id === "score-vs-effect"));
+assert.ok(faqItems.some((item) => item.answer.includes("7/14/28")));
+
+const blockedFaqItems = getGeoAuditFaqItems({
+  conclusion: blockedConclusion,
+  verificationDecision: blockedVerificationDecision,
+  hasPreviousReport: false,
+});
+assert.ok(blockedFaqItems.some((item) => item.id === "ga4-no-signal"));
+assert.ok(blockedFaqItems.some((item) => item.answer.includes("GA4")));
 
 console.log("GEO display tests passed");

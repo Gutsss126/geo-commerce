@@ -178,6 +178,13 @@ export type GeoCheckGroupSummaryItem = {
   topIssues: string[];
 };
 
+export type GeoAuditFaqItem = {
+  id: "score-vs-effect" | "ga4-no-signal" | "time-window" | "what-to-fix" | "why-groups";
+  question: string;
+  answer: string;
+  tone: "info" | "warn" | "action";
+};
+
 export type GeoAuditStatusSummaryItem = {
   id: "coverage" | "required" | "actions" | "validation";
   label: string;
@@ -1164,6 +1171,55 @@ export function getGeoAuditConclusion({
     nextAction: observeGate?.detail ?? verificationDecision.primaryAction,
     notReady: "继续等待 7/14/28 天 GA4 和搜索数据，再判断趋势。",
   };
+}
+
+export function getGeoAuditFaqItems({
+  conclusion,
+  verificationDecision,
+  hasPreviousReport,
+}: {
+  conclusion: GeoAuditConclusion;
+  verificationDecision: GeoVerificationDecisionSummary;
+  hasPreviousReport: boolean;
+}): GeoAuditFaqItem[] {
+  const behaviorLayer = verificationDecision.items.find((item) => item.id === "behavior");
+  const items: GeoAuditFaqItem[] = [
+    {
+      id: "score-vs-effect",
+      question: "分数变好就代表 GEO 有效果吗？",
+      answer: "不一定。分数只能说明页面、证据和配置更完整；真正效果还要看 GA4 行为、后续搜索曝光、点击和转化是否同步改善。",
+      tone: "info",
+    },
+    {
+      id: "time-window",
+      question: "为什么一直提示 7/14/28 天？",
+      answer: "GEO/SEO 不是实时排名按钮。7/14/28 天用于过滤短期波动，避免把一次访问、缓存或广告流量误判为长期优化效果。",
+      tone: hasPreviousReport ? "info" : "warn",
+    },
+    {
+      id: "what-to-fix",
+      question: "我应该先改哪个问题？",
+      answer: conclusion.nextAction,
+      tone: "action",
+    },
+    {
+      id: "why-groups",
+      question: "为什么把检查项分成 4 类？",
+      answer: "因为用户真正关心的是能不能被读到、AI 能不能理解、信任信息是否完整、效果能不能验证，而不是每个技术检查项的名字。",
+      tone: "info",
+    },
+  ];
+
+  if (behaviorLayer?.status === "blocked" || behaviorLayer?.status === "waiting") {
+    items.splice(1, 0, {
+      id: "ga4-no-signal",
+      question: "为什么 GA4 或 GEO 后台暂时没反应？",
+      answer: "先确认 GA4 Measurement ID、Property 权限、OAuth、page_view 和关键事件是否都正常。DebugView 或 GA4 实时数据出现后，GEO 才能继续判断行为层。",
+      tone: "warn",
+    });
+  }
+
+  return items;
 }
 
 export function getGeoAuditStatusSummary({
