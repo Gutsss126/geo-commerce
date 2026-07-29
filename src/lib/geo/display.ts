@@ -183,6 +183,14 @@ export type GeoSystemHealthItem = {
   verify: string;
 };
 
+export type GeoWorkbenchDecision = {
+  mode: "setup" | "config" | "verify" | "task" | "observe";
+  headline: string;
+  summary: string;
+  primaryAction: string;
+  primaryHref: string;
+};
+
 export type GeoTaskCompletionChecklistItem = {
   id: "publish" | "verify" | "rerun";
   label: string;
@@ -1128,6 +1136,70 @@ export function getGeoSystemHealthItems({
       verify: "Google 授权完成后回到线上域名，而不是 localhost 或 127.0.0.1。",
     },
   ];
+}
+
+export function getGeoWorkbenchDecision({
+  conclusion,
+  focusTask,
+  verificationDecision,
+  systemHealthItems,
+}: {
+  conclusion: GeoAuditConclusion;
+  focusTask: GeoFocusTaskSummary | null;
+  verificationDecision: GeoVerificationDecisionSummary;
+  systemHealthItems: GeoSystemHealthItem[];
+}): GeoWorkbenchDecision {
+  const warningConfig = systemHealthItems.find((item) => item.status === "warn");
+  if (warningConfig) {
+    return {
+      mode: "config",
+      headline: `先检查配置：${warningConfig.label}`,
+      summary: warningConfig.message,
+      primaryAction: warningConfig.actionLabel,
+      primaryHref: warningConfig.href,
+    };
+  }
+
+  const blockedVerification =
+    verificationDecision.items.find((item) => item.id === "behavior" && item.status === "blocked") ??
+    verificationDecision.items.find((item) => item.status === "blocked");
+  if (blockedVerification) {
+    return {
+      mode: "verify",
+      headline: `先打通验证：${blockedVerification.label}`,
+      summary: blockedVerification.signal,
+      primaryAction: blockedVerification.nextStep,
+      primaryHref: blockedVerification.id === "behavior" ? "/diagnostics/ga4" : "#geo-audit-review",
+    };
+  }
+
+  if (focusTask) {
+    return {
+      mode: "task",
+      headline: "今天只处理这一项",
+      summary: focusTask.reason,
+      primaryAction: focusTask.task.title,
+      primaryHref: "#geo-audit-tasks",
+    };
+  }
+
+  if (conclusion.tone === "setup") {
+    return {
+      mode: "setup",
+      headline: conclusion.headline,
+      summary: conclusion.nextAction,
+      primaryAction: "运行 GEO Audit",
+      primaryHref: "#geo-audit-result",
+    };
+  }
+
+  return {
+    mode: "observe",
+    headline: "进入观察窗口",
+    summary: conclusion.notReady,
+    primaryAction: "查看复查动作",
+    primaryHref: "#geo-audit-review",
+  };
 }
 
 export function getGeoExecutionTasks(

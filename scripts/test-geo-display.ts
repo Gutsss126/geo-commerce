@@ -26,6 +26,7 @@ import {
   getGeoAuditNoticeItems,
   getGeoReviewActionItems,
   getGeoSystemHealthItems,
+  getGeoWorkbenchDecision,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -61,6 +62,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("SystemHealthCard"),
   "GEO audit page should expose compact configuration health"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("WorkbenchDecisionCard"),
+  "GEO audit page should show a first-screen decision summary"
 );
 
 assert.ok(
@@ -902,6 +908,33 @@ const activeConclusion = getGeoAuditConclusion({
 assert.equal(activeConclusion.tone, "action");
 assert.ok(activeConclusion.nextAction.includes(taskCenterGroups[0].tasks[0].title));
 assert.ok(activeConclusion.notReady.includes("7/14/28"));
+
+const configDecision = getGeoWorkbenchDecision({
+  conclusion: activeConclusion,
+  focusTask,
+  verificationDecision,
+  systemHealthItems: missingOAuthSystemItems,
+});
+assert.equal(configDecision.mode, "config");
+assert.ok(configDecision.headline.includes("配置"));
+
+const taskDecision = getGeoWorkbenchDecision({
+  conclusion: activeConclusion,
+  focusTask,
+  verificationDecision,
+  systemHealthItems: healthySystemItems,
+});
+assert.equal(taskDecision.mode, "task");
+assert.ok(taskDecision.primaryAction.includes(focusTask?.task.title ?? ""));
+
+const blockedDecision = getGeoWorkbenchDecision({
+  conclusion: blockedConclusion,
+  focusTask: null,
+  verificationDecision: blockedVerificationDecision,
+  systemHealthItems: healthySystemItems,
+});
+assert.equal(blockedDecision.mode, "verify");
+assert.ok(blockedDecision.primaryHref.includes("diagnostics"));
 
 const faqItems = getGeoAuditFaqItems({
   conclusion: activeConclusion,
