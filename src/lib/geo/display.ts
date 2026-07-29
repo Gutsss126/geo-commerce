@@ -172,6 +172,15 @@ export type GeoReviewActionItem = {
   href?: string;
 };
 
+export type GeoSystemHealthItem = {
+  id: "database" | "ga4-data" | "google-oauth" | "app-url";
+  label: string;
+  status: "ok" | "warn";
+  message: string;
+  actionLabel: string;
+  href: string;
+};
+
 export type GeoTaskCompletionChecklistItem = {
   id: "publish" | "verify" | "rerun";
   label: string;
@@ -1039,6 +1048,58 @@ export function getGeoReviewActionItems({
       label: "查看等待窗口",
       helper: "没有必须立刻处理的任务时，按 7/14/28 天节奏观察。",
       href: "#geo-audit-review",
+    },
+  ];
+}
+
+export function getGeoSystemHealthItems({
+  hasDatabaseUrl,
+  hasGa4PropertyId,
+  hasGoogleOAuthClient,
+  hasGoogleOAuthRedirect,
+  appUrl,
+}: {
+  hasDatabaseUrl: boolean;
+  hasGa4PropertyId: boolean;
+  hasGoogleOAuthClient: boolean;
+  hasGoogleOAuthRedirect: boolean;
+  appUrl?: string | null;
+}): GeoSystemHealthItem[] {
+  const oauthReady = hasGoogleOAuthClient && hasGoogleOAuthRedirect;
+  const appUrlLooksProduction = Boolean(appUrl && appUrl.startsWith("https://"));
+
+  return [
+    {
+      id: "database",
+      label: "数据库",
+      status: hasDatabaseUrl ? "ok" : "warn",
+      message: hasDatabaseUrl ? "已配置 DATABASE_URL，可读取站点、商品和审计报告。" : "缺少 DATABASE_URL，线上页面可能无法读取审计数据。",
+      actionLabel: "查看详细诊断",
+      href: "#geo-audit-details",
+    },
+    {
+      id: "ga4-data",
+      label: "GA4 Data API",
+      status: hasGa4PropertyId ? "ok" : "warn",
+      message: hasGa4PropertyId ? "已配置 GA4_PROPERTY_ID，可用于读取行为数据。" : "缺少 GA4_PROPERTY_ID，GEO 无法判断访问与行为效果。",
+      actionLabel: "查看 GA4",
+      href: "/diagnostics/ga4",
+    },
+    {
+      id: "google-oauth",
+      label: "Google OAuth",
+      status: oauthReady ? "ok" : "warn",
+      message: oauthReady ? "OAuth Client 和回调地址已配置，可使用登录授权读取 GA4。" : "OAuth 配置不完整，重新授权或换账号时可能失败。",
+      actionLabel: "查看 GA4",
+      href: "/diagnostics/ga4",
+    },
+    {
+      id: "app-url",
+      label: "应用地址",
+      status: appUrlLooksProduction ? "ok" : "warn",
+      message: appUrlLooksProduction ? "NEXT_PUBLIC_APP_URL 看起来是线上 HTTPS 地址。" : "应用 URL 可能仍是本地地址，OAuth 回调容易跳回 localhost。",
+      actionLabel: "查看 GA4",
+      href: "/diagnostics/ga4",
     },
   ];
 }

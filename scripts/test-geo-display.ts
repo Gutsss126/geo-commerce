@@ -25,6 +25,7 @@ import {
   getGeoFocusTaskSummary,
   getGeoAuditNoticeItems,
   getGeoReviewActionItems,
+  getGeoSystemHealthItems,
 } from "../src/lib/geo/display";
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
@@ -55,6 +56,11 @@ assert.ok(
 assert.ok(
   geoAuditPageSource.includes("ReviewActionBar"),
   "GEO audit review area should expose concrete review actions"
+);
+
+assert.ok(
+  geoAuditPageSource.includes("SystemHealthCard"),
+  "GEO audit page should expose compact configuration health"
 );
 
 assert.ok(
@@ -811,6 +817,26 @@ const waitingReviewActions = getGeoReviewActionItems({
   verificationDecision,
 });
 assert.ok(waitingReviewActions.some((item) => item.id === "wait"));
+
+const healthySystemItems = getGeoSystemHealthItems({
+  hasDatabaseUrl: true,
+  hasGa4PropertyId: true,
+  hasGoogleOAuthClient: true,
+  hasGoogleOAuthRedirect: true,
+  appUrl: "https://geo-commerce-o2lp.vercel.app",
+});
+assert.equal(healthySystemItems.filter((item) => item.status === "ok").length, healthySystemItems.length);
+assert.ok(healthySystemItems.some((item) => item.href === "/diagnostics/ga4"));
+
+const missingOAuthSystemItems = getGeoSystemHealthItems({
+  hasDatabaseUrl: true,
+  hasGa4PropertyId: true,
+  hasGoogleOAuthClient: false,
+  hasGoogleOAuthRedirect: false,
+  appUrl: "http://127.0.0.1:3000",
+});
+assert.ok(missingOAuthSystemItems.some((item) => item.status === "warn"));
+assert.ok(missingOAuthSystemItems.some((item) => item.message.includes("OAuth")));
 
 const firstStageGates = getGeoAuditStageGates({
   hasReport: false,

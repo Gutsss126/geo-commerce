@@ -19,6 +19,7 @@ import {
   getGeoReviewSteps,
   getGeoReviewActionItems,
   getGeoScopeGaps,
+  getGeoSystemHealthItems,
   getGeoStrategyReadiness,
   getGeoAuditConclusion,
   getGeoAuditFaqItems,
@@ -1576,6 +1577,43 @@ function ReviewActionBar({
   );
 }
 
+function SystemHealthCard({ items }: { items: ReturnType<typeof getGeoSystemHealthItems> }) {
+  const styles = {
+    ok: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
+    warn: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+  };
+  const labels = {
+    ok: "正常",
+    warn: "需检查",
+  };
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <CardTitle>系统健康</CardTitle>
+          <CardDescription>只检查支撑诊断的关键配置，不显示任何密钥值。</CardDescription>
+        </div>
+        <span className="rounded border border-slate-600/70 bg-slate-950/40 px-2 py-1 text-xs text-slate-300">
+          {items.filter((item) => item.status === "ok").length}/{items.length}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => (
+          <a key={item.id} href={item.href} className="rounded-lg border border-[var(--border)] bg-slate-950/40 p-3 hover:bg-slate-800/60">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-100">{item.label}</p>
+              <span className={`rounded border px-2 py-0.5 text-xs ${styles[item.status]}`}>{labels[item.status]}</span>
+            </div>
+            <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">{item.message}</p>
+            <p className="mt-3 text-xs font-medium text-blue-200">{item.actionLabel}</p>
+          </a>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function AuditFaqCard({ items }: { items: ReturnType<typeof getGeoAuditFaqItems> }) {
   const toneStyles = {
     info: "border-blue-500/30 bg-blue-500/5 text-blue-200",
@@ -1686,6 +1724,13 @@ export default async function GeoAuditV2Page() {
     hasReport: Boolean(report),
     focusTask: focusTaskSummary,
     verificationDecision: verificationDecisionSummary,
+  });
+  const systemHealthItems = getGeoSystemHealthItems({
+    hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+    hasGa4PropertyId: Boolean(process.env.GA4_PROPERTY_ID),
+    hasGoogleOAuthClient: Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET),
+    hasGoogleOAuthRedirect: Boolean(process.env.GOOGLE_OAUTH_REDIRECT_URI),
+    appUrl: process.env.NEXT_PUBLIC_APP_URL,
   });
   const todayActionPlan = getGeoTodayActionPlan({
     hasReport: Boolean(report),
@@ -1813,6 +1858,7 @@ export default async function GeoAuditV2Page() {
         <ReviewStepsCard steps={reviewSteps} />
       </div>
       <AuditFaqCard items={faqItems} />
+      <SystemHealthCard items={systemHealthItems} />
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-slate-950/30 p-3">
         {detailsSummaryItems.map((item) => (
