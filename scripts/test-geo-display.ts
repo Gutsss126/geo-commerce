@@ -70,6 +70,11 @@ assert.ok(
 );
 
 assert.ok(
+  geoAuditPageSource.includes("WorkbenchSupportDetails"),
+  "GEO audit page should fold supporting summary cards behind the main decision"
+);
+
+assert.ok(
   geoAuditPageSource.includes("TaskCompactDetails"),
   "GEO audit task center should fold secondary explanations and completion details"
 );

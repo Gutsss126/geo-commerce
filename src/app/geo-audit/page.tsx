@@ -1666,6 +1666,37 @@ function WorkbenchDecisionCard({ decision }: { decision: ReturnType<typeof getGe
   );
 }
 
+function WorkbenchSupportDetails({
+  conclusion,
+  actionPlan,
+  stageGates,
+}: {
+  conclusion: ReturnType<typeof getGeoAuditConclusion>;
+  actionPlan: ReturnType<typeof getGeoTodayActionPlan>;
+  stageGates: ReturnType<typeof getGeoAuditStageGates>;
+}) {
+  return (
+    <details className="rounded-xl border border-[var(--border)] bg-[var(--card)]">
+      <summary className="cursor-pointer list-none p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <CardTitle>判断依据</CardTitle>
+            <CardDescription>展开查看结论、今日动作和阶段门；默认收起，避免首屏信息过载。</CardDescription>
+          </div>
+          <span className="rounded border border-slate-600/70 bg-slate-950/40 px-2 py-1 text-xs text-slate-300">
+            展开
+          </span>
+        </div>
+      </summary>
+      <div className="space-y-4 border-t border-[var(--border)] p-4">
+        <AuditConclusionCard conclusion={conclusion} />
+        <TodayActionCard plan={actionPlan} />
+        <StageGateCard gates={stageGates} />
+      </div>
+    </details>
+  );
+}
+
 function AuditFaqCard({ items }: { items: ReturnType<typeof getGeoAuditFaqItems> }) {
   const toneStyles = {
     info: "border-blue-500/30 bg-blue-500/5 text-blue-200",
@@ -1889,10 +1920,8 @@ export default async function GeoAuditV2Page() {
 
       <WorkbenchDecisionCard decision={workbenchDecision} />
       <GeoAuditPageNav />
-      <AuditConclusionCard conclusion={auditConclusion} />
-      <TodayActionCard plan={todayActionPlan} />
+      <WorkbenchSupportDetails conclusion={auditConclusion} actionPlan={todayActionPlan} stageGates={stageGates} />
       <AuditNoticeStrip items={auditNotices} />
-      <StageGateCard gates={stageGates} />
 
       <div id="geo-audit-result" className="scroll-mt-4">
         <AuditDeltaCard
