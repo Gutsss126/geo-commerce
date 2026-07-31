@@ -71,20 +71,21 @@ function TaskStatusPill({ status }: { status: "todo" | "review" | "improved" }) 
   return <span className={`rounded border px-2 py-0.5 text-xs ${styles[status]}`}>{labels[status]}</span>;
 }
 
-const geoAuditPrimaryNavItems = [
-  { href: "#geo-audit-result", label: "看状态", helper: "分数变化" },
-  { href: "#geo-audit-tasks", label: "做任务", helper: "下一步" },
-  { href: "#geo-audit-review", label: "查效果", helper: "验证结果" },
+const geoAuditWorkflowNavItems = [
+  { href: "#geo-audit-result", label: "1 看结果", helper: "分数 / 缺口" },
+  { href: "#geo-audit-tasks", label: "2 做优化", helper: "任务 / 入口" },
+  { href: "#geo-audit-review", label: "3 查变化", helper: "GA4 / 复查" },
+  { href: "#geo-audit-evidence", label: "4 看证据", helper: "配置 / FAQ" },
 ];
 
-const geoAuditDetailsNavItem = { href: "#geo-audit-details", label: "详细诊断" };
+const geoAuditDetailsNavLink = { href: "#geo-audit-details", label: "全部明细" };
 
 function GeoAuditPageNav() {
   return (
     <nav aria-label="GEO Audit page sections" className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid flex-1 gap-2 sm:grid-cols-3">
-          {geoAuditPrimaryNavItems.map((item) => (
+        <div className="grid flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {geoAuditWorkflowNavItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
@@ -96,10 +97,10 @@ function GeoAuditPageNav() {
           ))}
         </div>
         <a
-          href={geoAuditDetailsNavItem.href}
+          href={geoAuditDetailsNavLink.href}
           className="rounded border border-slate-600/70 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800"
         >
-          {geoAuditDetailsNavItem.label}
+          {geoAuditDetailsNavLink.label}
         </a>
       </div>
     </nav>
@@ -1976,8 +1977,10 @@ export default async function GeoAuditV2Page() {
       </GeoWorkbenchSection>
 
       <GeoWorkbenchSection step="4" title="看证据">
-        <SystemHealthCard items={systemHealthItems} />
-        <AuditFaqCard items={faqItems} />
+        <div id="geo-audit-evidence" className="scroll-mt-4 space-y-4">
+          <SystemHealthCard items={systemHealthItems} />
+          <AuditFaqCard items={faqItems} />
+        </div>
       </GeoWorkbenchSection>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-slate-950/30 p-3">

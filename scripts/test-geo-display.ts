@@ -31,11 +31,23 @@ import {
 
 const geoAuditPageSource = readFileSync("src/app/geo-audit/page.tsx", "utf8");
 
-for (const anchor of ["#geo-audit-result", "#geo-audit-tasks", "#geo-audit-review", "#geo-audit-details"]) {
+for (const anchor of [
+  "#geo-audit-result",
+  "#geo-audit-tasks",
+  "#geo-audit-review",
+  "#geo-audit-evidence",
+  "#geo-audit-details",
+]) {
   assert.ok(geoAuditPageSource.includes(`href: "${anchor}"`), `GEO audit page should link to ${anchor}`);
 }
 
-for (const sectionId of ["geo-audit-result", "geo-audit-tasks", "geo-audit-review", "geo-audit-details"]) {
+for (const sectionId of [
+  "geo-audit-result",
+  "geo-audit-tasks",
+  "geo-audit-review",
+  "geo-audit-evidence",
+  "geo-audit-details",
+]) {
   assert.ok(geoAuditPageSource.includes(`id="${sectionId}"`), `GEO audit page should expose ${sectionId}`);
 }
 
@@ -117,8 +129,8 @@ assert.ok(
 );
 
 assert.ok(
-  geoAuditPageSource.includes("geoAuditPrimaryNavItems") && geoAuditPageSource.includes("geoAuditDetailsNavItem"),
-  "GEO audit navigation should separate the 3-step workbench flow from secondary details"
+  geoAuditPageSource.includes("geoAuditWorkflowNavItems") && geoAuditPageSource.includes("geoAuditDetailsNavLink"),
+  "GEO audit navigation should separate the 4-step workbench flow from secondary details"
 );
 
 assert.ok(
