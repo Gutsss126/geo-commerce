@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowRight, CheckCircle2, FileText, ListChecks, Sparkles, TriangleAlert } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { runSiteAudit } from "@/app/actions";
@@ -1697,6 +1698,26 @@ function WorkbenchSupportDetails({
   );
 }
 
+function GeoWorkbenchSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-4 rounded-xl border border-[var(--border)] bg-slate-950/20 p-4">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-300">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
 function AuditFaqCard({ items }: { items: ReturnType<typeof getGeoAuditFaqItems> }) {
   const toneStyles = {
     info: "border-blue-500/30 bg-blue-500/5 text-blue-200",
@@ -1918,35 +1939,46 @@ export default async function GeoAuditV2Page() {
         </Card>
       </div>
 
-      <WorkbenchDecisionCard decision={workbenchDecision} />
       <GeoAuditPageNav />
-      <WorkbenchSupportDetails conclusion={auditConclusion} actionPlan={todayActionPlan} stageGates={stageGates} />
-      <AuditNoticeStrip items={auditNotices} />
 
-      <div id="geo-audit-result" className="scroll-mt-4">
-        <AuditDeltaCard
-          current={report}
-          previous={previousReport}
-          auditCount={primarySite?._count.audits ?? 0}
-          currentCreatedAt={latestAudit?.createdAt}
-          previousCreatedAt={previousAudit?.createdAt}
-          hasTasks={taskCenterGroups.some((group) => group.tasks.length > 0)}
-        />
-      </div>
-      <EffectTrackingCard summary={effectTrackingSummary} />
-      <VerificationDecisionCard summary={verificationDecisionSummary} />
-      <FocusTaskCard summary={focusTaskSummary} />
-      <div id="geo-audit-tasks" className="scroll-mt-4">
-        <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
-      </div>
-      <div id="geo-audit-review" className="scroll-mt-4">
-        <ReviewActionBar actions={reviewActions} siteId={primarySite?.id} />
-      </div>
-      <div className="scroll-mt-4">
-        <ReviewStepsCard steps={reviewSteps} />
-      </div>
-      <AuditFaqCard items={faqItems} />
-      <SystemHealthCard items={systemHealthItems} />
+      <GeoWorkbenchSection title="当前结论" description="先看评分、变化和本轮判断，再决定是否需要立刻行动。">
+        <WorkbenchDecisionCard decision={workbenchDecision} />
+        <AuditNoticeStrip items={auditNotices} />
+        <div id="geo-audit-result" className="scroll-mt-4">
+          <AuditDeltaCard
+            current={report}
+            previous={previousReport}
+            auditCount={primarySite?._count.audits ?? 0}
+            currentCreatedAt={latestAudit?.createdAt}
+            previousCreatedAt={previousAudit?.createdAt}
+            hasTasks={taskCenterGroups.some((group) => group.tasks.length > 0)}
+          />
+        </div>
+        <WorkbenchSupportDetails conclusion={auditConclusion} actionPlan={todayActionPlan} stageGates={stageGates} />
+      </GeoWorkbenchSection>
+
+      <GeoWorkbenchSection title="执行优化" description="拿到评分后从这里开始，只处理当前最值得做的动作。">
+        <FocusTaskCard summary={focusTaskSummary} />
+        <div id="geo-audit-tasks" className="scroll-mt-4">
+          <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
+        </div>
+      </GeoWorkbenchSection>
+
+      <GeoWorkbenchSection title="验证效果" description="完成修改后，从这里复查 GA4、页面变化和等待窗口。">
+        <div id="geo-audit-review" className="scroll-mt-4">
+          <ReviewActionBar actions={reviewActions} siteId={primarySite?.id} />
+        </div>
+        <EffectTrackingCard summary={effectTrackingSummary} />
+        <VerificationDecisionCard summary={verificationDecisionSummary} />
+        <div className="scroll-mt-4">
+          <ReviewStepsCard steps={reviewSteps} />
+        </div>
+      </GeoWorkbenchSection>
+
+      <GeoWorkbenchSection title="配置与证据" description="配置健康、FAQ 和详细证据放在后面，避免打断主要执行流程。">
+        <SystemHealthCard items={systemHealthItems} />
+        <AuditFaqCard items={faqItems} />
+      </GeoWorkbenchSection>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-slate-950/30 p-3">
         {detailsSummaryItems.map((item) => (

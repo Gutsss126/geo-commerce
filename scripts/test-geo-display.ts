@@ -75,6 +75,15 @@ assert.ok(
 );
 
 assert.ok(
+  geoAuditPageSource.includes("GeoWorkbenchSection"),
+  "GEO audit page should group score, actions, verification, and evidence into clear sections"
+);
+
+const actionSectionIndex = geoAuditPageSource.indexOf("id=\"geo-audit-tasks\"");
+const verificationSectionIndex = geoAuditPageSource.indexOf("id=\"geo-audit-review\"");
+assert.ok(actionSectionIndex > -1 && verificationSectionIndex > -1 && actionSectionIndex < verificationSectionIndex);
+
+assert.ok(
   geoAuditPageSource.includes("TaskCompactDetails"),
   "GEO audit task center should fold secondary explanations and completion details"
 );
