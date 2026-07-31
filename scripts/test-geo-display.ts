@@ -99,8 +99,11 @@ assert.ok(
 );
 
 assert.ok(
-  geoAuditPageSource.includes("WorkspaceFlowCard"),
-  "GEO audit first screen should explain the workflow: status, next task, and effect tracking"
+  geoAuditPageSource.includes('GeoWorkbenchSection step="1" title="看结果"') &&
+    geoAuditPageSource.includes('GeoWorkbenchSection step="2" title="做优化"') &&
+    geoAuditPageSource.includes('GeoWorkbenchSection step="3" title="查变化"') &&
+    geoAuditPageSource.includes('GeoWorkbenchSection step="4" title="看证据"'),
+  "GEO audit page should present the workbench as a concise four-step user flow"
 );
 
 assert.ok(

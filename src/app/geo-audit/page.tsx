@@ -1699,19 +1699,21 @@ function WorkbenchSupportDetails({
 }
 
 function GeoWorkbenchSection({
+  step,
   title,
-  description,
   children,
 }: {
+  step: string;
   title: string;
-  description: string;
   children: ReactNode;
 }) {
   return (
     <section className="space-y-4 rounded-xl border border-[var(--border)] bg-slate-950/20 p-4">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-300">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+      <div className="flex items-center gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-blue-500/40 bg-blue-500/10 text-sm font-semibold text-blue-200">
+          {step}
+        </span>
+        <h2 className="text-base font-semibold text-slate-100">{title}</h2>
       </div>
       <div className="space-y-4">{children}</div>
     </section>
@@ -1924,8 +1926,6 @@ export default async function GeoAuditV2Page() {
           )}
         </Card>
 
-        <WorkspaceFlowCard score={report?.overallScore ?? null} featuredTask={featuredTask} effectSummary={effectTrackingSummary} />
-
         <Card className="hidden">
           <div className="flex items-center gap-2">
             <ListChecks className="h-5 w-5 text-emerald-300" />
@@ -1941,9 +1941,8 @@ export default async function GeoAuditV2Page() {
 
       <GeoAuditPageNav />
 
-      <GeoWorkbenchSection title="当前结论" description="先看评分、变化和本轮判断，再决定是否需要立刻行动。">
+      <GeoWorkbenchSection step="1" title="看结果">
         <WorkbenchDecisionCard decision={workbenchDecision} />
-        <AuditNoticeStrip items={auditNotices} />
         <div id="geo-audit-result" className="scroll-mt-4">
           <AuditDeltaCard
             current={report}
@@ -1954,17 +1953,18 @@ export default async function GeoAuditV2Page() {
             hasTasks={taskCenterGroups.some((group) => group.tasks.length > 0)}
           />
         </div>
+        <AuditNoticeStrip items={auditNotices} />
         <WorkbenchSupportDetails conclusion={auditConclusion} actionPlan={todayActionPlan} stageGates={stageGates} />
       </GeoWorkbenchSection>
 
-      <GeoWorkbenchSection title="执行优化" description="拿到评分后从这里开始，只处理当前最值得做的动作。">
+      <GeoWorkbenchSection step="2" title="做优化">
         <FocusTaskCard summary={focusTaskSummary} />
         <div id="geo-audit-tasks" className="scroll-mt-4">
           <TaskCenterCard groups={taskCenterGroups} siteId={primarySite?.id} />
         </div>
       </GeoWorkbenchSection>
 
-      <GeoWorkbenchSection title="验证效果" description="完成修改后，从这里复查 GA4、页面变化和等待窗口。">
+      <GeoWorkbenchSection step="3" title="查变化">
         <div id="geo-audit-review" className="scroll-mt-4">
           <ReviewActionBar actions={reviewActions} siteId={primarySite?.id} />
         </div>
@@ -1975,7 +1975,7 @@ export default async function GeoAuditV2Page() {
         </div>
       </GeoWorkbenchSection>
 
-      <GeoWorkbenchSection title="配置与证据" description="配置健康、FAQ 和详细证据放在后面，避免打断主要执行流程。">
+      <GeoWorkbenchSection step="4" title="看证据">
         <SystemHealthCard items={systemHealthItems} />
         <AuditFaqCard items={faqItems} />
       </GeoWorkbenchSection>
